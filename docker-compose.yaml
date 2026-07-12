@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  lucee:
+    build:
+      context: ./build
+      dockerfile: Dockerfile.local
+    container_name: cms_condominio
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src:/app
+    environment:
+      PORT: 8080
+      BOX_SERVER_PROFILE: development
+      BOX_SERVER_WEB_REWRITE_ENABLE: "true"
+      BOX_SERVER_WEB_DIRECTORY: /app
+      LUCEE_ADMIN_PASSWORD: ${LUCEE_ADMIN_PASSWORD}
+    tty: true

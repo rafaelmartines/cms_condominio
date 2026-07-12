@@ -1,0 +1,6 @@
+{
+	"boxlang.mappings": {
+		"/coldbox": "lib/coldbox",
+		"/testbox": "lib/testbox"
+	}
+}
