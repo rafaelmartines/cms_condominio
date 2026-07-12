@@ -13,4 +13,4 @@ COPY . /app
 RUN box install
 
 # Expõe a porta padrão do CommandBox (8080)
-EXPOSE 10000
+EXPOSE 8080
