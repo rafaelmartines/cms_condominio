@@ -1,5 +1,5 @@
 # Usamos a imagem oficial do CommandBox com suporte a Java 21+ (necessário para Lucee 7)
-FROM ortusolutions/commandbox:jdk21
+FROM ortussolutions/commandbox:jdk21-3.20.0
 
 # Informações sobre a sua aplicação
 LABEL maintainer="Seu Nome <seu-email@dominio.com>"
