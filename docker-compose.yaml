@@ -15,5 +15,6 @@ services:
       BOX_SERVER_PROFILE: development
       BOX_SERVER_WEB_REWRITE_ENABLE: "true"
       BOX_SERVER_WEB_DIRECTORY: /app
+      BOX_SERVER_WEB_HOST: "0.0.0.0"
       LUCEE_ADMIN_PASSWORD: ${LUCEE_ADMIN_PASSWORD}
     tty: true
