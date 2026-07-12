@@ -1,6 +1,8 @@
 # Base image oficial da Ortus Solutions
 FROM ortussolutions/commandbox:lucee7-3.16.0
 
+ENV PORT=10000
+
 RUN echo "Aplicação será exposta na porta $PORT"
 
 # Define o diretório de trabalho dentro do container
@@ -13,4 +15,4 @@ COPY . /app
 RUN box install
 
 # Expõe a porta padrão do CommandBox (8080)
-EXPOSE 8080
+EXPOSE 10000
