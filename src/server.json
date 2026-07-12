@@ -3,11 +3,6 @@
     "jvm":{
         "heapSize":"512",
         "javaVersion":"openjdk21_jre",
-        "args":"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8888"
-    },
-    "web":{
-        "rewrites":{
-            "enable":true
-        }
+        "args":"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8888 --enable-native-access=ALL-UNNAMED"
     }
 }
