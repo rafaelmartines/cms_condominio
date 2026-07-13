@@ -15,7 +15,7 @@ ENV BUTTON_BUNCH=true
 ENV PORT=10000
 
 # 3. Definir o diretório de trabalho da aplicação dentro do container
-WORKDIR $APP_DIR
+WORKDIR ${APP_DIR}
 
 # 4. Copiar os arquivos estruturais do ColdBox (box.json) primeiro 
 # Isso otimiza o cache de camadas do Docker ao instalar dependências
@@ -29,7 +29,7 @@ COPY src/. ./
 
 # 6. Rodar o warmup (pré-aquecimento) para baixar o Lucee 7 e compilar o ColdBox
 # Isso evita que o Render sofra timeout na primeira requisição
-RUN $BUILD_DIR/warmup.sh
+RUN ${BUILD_DIR}/util/warmup-server.sh
 
 # O Render ignora o EXPOSE e usa o bind interno na porta da variável $PORT, 
 # mas mantemos por boas práticas documentacionais.
