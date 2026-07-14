@@ -68,7 +68,7 @@ component {
 	 * ORM + Datasource Settings
 	 * --------------------------------------------------------------------------
 	 */
-	this.datasource = "coldbox";
+	this.datasource = "cmscondominio";
 
 	/**
 	 * Fires when the application starts

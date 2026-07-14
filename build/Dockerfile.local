@@ -1,5 +1,5 @@
 # Base image oficial da Ortus Solutions
-FROM ortussolutions/commandbox:lucee7-3.16.0
+FROM ortussolutions/commandbox:lucee6-3.16.0
 
 # Define o diretório de trabalho dentro do container
 WORKDIR /app
