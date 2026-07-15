@@ -22,11 +22,15 @@
         "commandbox-boxlang":"*"
     },
     "dependencies":{
-        "coldbox":"^8.0.0"
+        "coldbox":"8.1.0+34",
+        "quick":"^12.0.12",
+        "cbpaginator":"^2.8.3"
     },
     "installPaths":{
         "coldbox":"lib/coldbox/",
-        "testbox":"lib/testbox/"
+        "testbox":"lib/testbox/",
+        "quick":"modules/quick/",
+        "cbpaginator":"modules/cbpaginator/"
     },
     "scripts":{
         "format":"!boxlang format --source config/,handlers/,interceptors/,models/,modules_app/,tests/specs/,*.cfc",

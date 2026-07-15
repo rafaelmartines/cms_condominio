@@ -1,9 +1,9 @@
 component extends="coldbox.system.EventHandler" {
 
     function index(event, rc, prc) {
-        prc.fornecedores = getInstance('FornecedoresService').getFornecedores();
+        arguments.prc.fornecedores = getInstance("FornecedoresService").getFornecedores();
 
-        event.setView('main/index');
+        arguments.event.setView("main/index");
     }
 
     /**
@@ -11,10 +11,10 @@ component extends="coldbox.system.EventHandler" {
      */
     function data(event, rc, prc) {
         return [
-            {'id': createUUID(), 'name': 'Luis'},
-            {'id': createUUID(), 'name': 'Joe'},
-            {'id': createUUID(), 'name': 'Bob'},
-            {'id': createUUID(), 'name': 'Darth'}
+            {"id": createUUID(), "name": "Luis"},
+            {"id": createUUID(), "name": "Joe"},
+            {"id": createUUID(), "name": "Bob"},
+            {"id": createUUID(), "name": "Darth"}
         ];
     }
 
@@ -22,7 +22,7 @@ component extends="coldbox.system.EventHandler" {
      * Relocation example
      */
     function doSomething(event, rc, prc) {
-        relocate('main.index');
+        relocate("main.index");
     }
 
     /**
@@ -46,8 +46,8 @@ component extends="coldbox.system.EventHandler" {
     }
 
     function onSessionEnd(event, rc, prc) {
-        var sessionScope = event.getValue('sessionReference');
-        var applicationScope = event.getValue('applicationReference');
+        var sessionScope = event.getValue("sessionReference");
+        var applicationScope = event.getValue("applicationReference");
     }
 
     function onException(event, rc, prc) {

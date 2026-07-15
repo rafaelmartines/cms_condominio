@@ -1,18 +1,18 @@
-component singleton {
+component singleton extends="BaseRepotisory" {
+
+    property name="cbpaginator" inject="Pagination@cbpaginator";
 
     public FornecedoresRepository function init() {
+        super.init();
         return this;
     }
 
-    public array function getFornecedores() {
-        local.sql = "SELECT * FROM CMSCONDOMINIO.TB_FORNECEDORES";
+    public struct function getFornecedores() {
+        local.sql = "SELECT f.* FROM CMSCONDOMINIO.TB_FORNECEDORES f";
 
-        local.resultado = queryExecute(
-            sql = local.sql
-        );
+        local.resultado = variables.consulta(local.sql, {}, true, "CD_FORNECEDOR");
 
-        writeDump(local.resultado);
-        abort;
+        return cbpaginator.reduceAndGenerate(local.resultado, 0, 10);
     }
 
 }

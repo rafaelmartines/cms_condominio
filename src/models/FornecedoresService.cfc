@@ -6,7 +6,7 @@ component singleton {
         return this;
     }
 
-    public array function getFornecedores() {
+    public struct function getFornecedores() {
         // Simulando a obtenção de dados de fornecedores
         return fornecedoresRepository.getFornecedores();
     }
