@@ -8,7 +8,8 @@ WORKDIR /app
 COPY . /app
 
 # Instala dependências do CommandBox (se houver box.json)
-RUN box install
+RUN box install \
+    && box install commandbox-bullet-train,commandbox-cfformat
 
 # Expõe a porta padrão do CommandBox (8080)
 EXPOSE 10000

@@ -25,6 +25,7 @@ component {
 		} );
 
 		// @app_routes@
+		get("/api/fornecedores", "api.Fornecedores.getFornecedores");
 
 		// Conventions-Based Routing
 		route( ":handler/:action?" ).end();

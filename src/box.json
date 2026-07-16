@@ -19,18 +19,22 @@
     "ignore":[],
     "devDependencies":{
         "testbox":"*",
-        "commandbox-boxlang":"*"
+        "commandbox-boxlang":"*",
+        "route-visualizer":"^2.2.0+2"
     },
     "dependencies":{
         "coldbox":"8.1.0+34",
         "quick":"^12.0.12",
-        "cbpaginator":"^2.8.3"
+        "cbpaginator":"^2.8.3",
+        "commandbox-bullet-train":"^1.4.2"
     },
     "installPaths":{
         "coldbox":"lib/coldbox/",
         "testbox":"lib/testbox/",
         "quick":"modules/quick/",
-        "cbpaginator":"modules/cbpaginator/"
+        "cbpaginator":"modules/cbpaginator/",
+        "route-visualizer":"modules/route-visualizer/",
+        "commandbox-bullet-train":"commandbox-cfformat/commandbox-bullet-train/"
     },
     "scripts":{
         "format":"!boxlang format --source config/,handlers/,interceptors/,models/,modules_app/,tests/specs/,*.cfc",
