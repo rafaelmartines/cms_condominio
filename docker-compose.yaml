@@ -12,6 +12,7 @@ services:
       - ./src:/app
     environment:
       PORT: 10000
+      ENVIRONMENT: development
       BOX_SERVER_PROFILE: development
       BOX_SERVER_WEB_REWRITES_ENABLE: "true"
       BOX_SERVER_WEB_DIRECTORY: /app

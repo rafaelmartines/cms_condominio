@@ -20,7 +20,8 @@
     "devDependencies":{
         "testbox":"*",
         "commandbox-boxlang":"*",
-        "route-visualizer":"^2.2.0+2"
+        "route-visualizer":"^2.2.0+2",
+        "cbdebugger":"^4.4.0+6"
     },
     "dependencies":{
         "coldbox":"8.1.0+34",
@@ -29,12 +30,13 @@
         "commandbox-bullet-train":"^1.4.2"
     },
     "installPaths":{
-        "coldbox":"lib/coldbox/",
-        "testbox":"lib/testbox/",
+        "coldbox":"coldbox/",
+        "testbox":"testbox/",
         "quick":"modules/quick/",
         "cbpaginator":"modules/cbpaginator/",
         "route-visualizer":"modules/route-visualizer/",
-        "commandbox-bullet-train":"commandbox-cfformat/commandbox-bullet-train/"
+        "commandbox-bullet-train":"commandbox-cfformat/commandbox-bullet-train/",
+        "cbdebugger":"modules/cbdebugger/"
     },
     "scripts":{
         "format":"!boxlang format --source config/,handlers/,interceptors/,models/,modules_app/,tests/specs/,*.cfc",
