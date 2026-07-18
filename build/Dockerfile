@@ -2,14 +2,7 @@
 FROM ortussolutions/commandbox:lucee6-3.16.0
 
 # Informações sobre a sua aplicação
-LABEL maintainer="Seu Nome <seu-email@dominio.com>"
-
-# 1. Definir o motor CFML para Lucee 7
-ENV APP_SERVER_VERSION=lucee@7
-
-# 2. Configurações para produção e conformidade com o Render
-ENV BOX_SERVER_PROFILE=production
-ENV BUTTON_BUNCH=true
+LABEL maintainer="Rafael Alves Sequini Martines <rafael.martines@gmail.com>"
 
 # O Render exige que a aplicação escute em 0.0.0.0
 ENV PORT=10000
