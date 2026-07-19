@@ -47,26 +47,31 @@
 <body>
 	<!---Top NavBar --->
 	<header>
-		<nav class="navbar navbar-expand-lg border-bottom bg-body-vertical">
-           <div class="container d-flex justify-content-between align-items-center">
-            <!-- Esquerda -->
-            <a class="navbar-brand fw-bold" href="##">
-                <i class="bi bi-building me-2 text-primary"></i>Vivão
-            </a>
-
-            <!-- Direita -->
-            <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
-                <ul class="navbar-nav mb-2 mb-lg-0">
-                <li class="nav-item">
-                    <a class="nav-link" aria-current="page" href="https://uclass.com.br/bn/vbstar/" target="_blank">
-                    <i class="bi bi-box-arrow-up-right"></i> Manual do Proprietário
-                    </a>
-                </li>
-                </ul>
+		<nav class="navbar border-bottom bg-body-vertical">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="##"><i class="bi bi-building me-2 text-primary"></i>Vivão</a>
+                
+                <!-- O botão de hamburguer agora fica visível em qualquer resolução -->
+                <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="offcanvas" data-bs-target="##menuLateralDireito" aria-controls="menuLateralDireito">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
             </div>
-            </div>
-            
         </nav>
+
+        <!-- Menu Lateral Direito (Offcanvas) -->
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="menuLateralDireito" aria-labelledby="menuLateralDireitoLabel">
+            <div class="offcanvas-header border-bottom">
+                <h5 class="offcanvas-title fw-bold" id="menuLateralDireitoLabel"><i class="bi bi-list me-2"></i>Navegação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body p-0">
+                <!-- Links do Menu -->
+                <div class="list-group list-group-flush">
+                    <a href="/" class="list-group-item list-group-item-action active py-3"><i class="bi bi-house-door me-3"></i>Início</a>
+                    <a href="https://uclass.com.br/bn/vbstar/" target="_blank" class="list-group-item list-group-item-action py-3"><i class="bi bi-box-arrow-up-right"></i> Manual do Proprietário</a>
+                </div>
+            </div>
+        </div>
 	</header>
 
 	<!---Container And Views --->
