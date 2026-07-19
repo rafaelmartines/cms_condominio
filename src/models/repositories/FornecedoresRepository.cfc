@@ -1,18 +1,69 @@
 component singleton extends="BaseRepotisory" {
 
-    property name="cbpaginator" inject="Pagination@cbpaginator";
+	property name="cbpaginator" inject="Pagination@cbpaginator";
 
-    public FornecedoresRepository function init() {
-        super.init();
-        return this;
-    }
+	public FornecedoresRepository function init() {
+		super.init();
+		return this;
+	}
 
-    public struct function getFornecedores() {
-        local.sql = "SELECT f.* FROM CMSCONDOMINIO.TB_FORNECEDORES f";
+	private struct function mesclarFiltroFornecedores( required FornecedoresFiltroDTO fornecedoresFiltroDTO ) {
+		local.parametros = {};
+		local.where      = "WHERE 1=1 ";
+		if ( not isNull( arguments.fornecedoresFiltroDTO.getNmFornecedor() ) ) {
+			local.where &= " AND UPPER(f.nm_fornecedor) LIKE :nmFornecedor ";
+			structAppend(
+				local.parametros,
+				{
+					nmFornecedor : {
+						value     : "%" & uCase( arguments.fornecedoresFiltroDTO.getNmFornecedor() ) & "%",
+						cfsqltype : "cf_sql_varchar"
+					}
+				}
+			);
+		}
+		if ( not isNull( arguments.fornecedoresFiltroDTO.getNmEmpresa() ) ) {
+			local.where &= " AND UPPER(f.nm_empresa) LIKE :nmEmpresa ";
+			structAppend(
+				local.parametros,
+				{
+					nmEmpresa : {
+						value     : "%" & uCase( arguments.fornecedoresFiltroDTO.getNmEmpresa() ) & "%",
+						cfsqltype : "cf_sql_varchar"
+					}
+				}
+			);
+		}
+		return {
+			"where"      : local.where,
+			"parametros" : local.parametros
+		};
+	}
 
-        local.resultado = variables.consulta(local.sql, {}, true, "CD_FORNECEDOR");
+	public struct function getFornecedores( required FornecedoresFiltroDTO fornecedoresFiltroDTO ) {
+		local.filtro = variables.mesclarFiltroFornecedores( arguments.fornecedoresFiltroDTO );
+		local.page   = int( arguments.fornecedoresFiltroDTO.getStart() / arguments.fornecedoresFiltroDTO.getLength() ) + 1;
 
-        return cbpaginator.reduceAndGenerate(local.resultado, 0, 10);
-    }
+		local.sql = "
+        SELECT
+            f.*
+        FROM
+            CMSCONDOMINIO.TB_FORNECEDORES f
+        #local.filtro.where#
+        ";
+
+		local.resultado = variables.consulta(
+			local.sql,
+			local.filtro.parametros,
+			true,
+			"CD_FORNECEDOR"
+		);
+
+		return cbpaginator.reduceAndGenerate(
+			local.resultado,
+			local.page,
+			arguments.fornecedoresFiltroDTO.getLength()
+		);
+	}
 
 }

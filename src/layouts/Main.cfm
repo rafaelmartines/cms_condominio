@@ -1,4 +1,3 @@
-<cfdump var="Em breve" abort="true" label="Em breve" />
 <cfoutput>
 <!DOCTYPE html>
     <html lang="pt-BR" data-bs-theme="dark">
@@ -148,13 +147,26 @@
             $(document).ready(function() {
                 $('##minhaTabela').DataTable({
                     language: {
-                        url: 'https://cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json'
+                        url: 'https://cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json',
                     },
-                    pageLength: 5,
+                    ajax: {
+                        url: '/api/fornecedores'
+                    },
+                    columns: [
+                        { data: 'nmFornecedor' },
+                        { data: 'nmEmpresa' },
+                        { data: 'html', orderable: false, searchable: false }
+                    ],
+                    columnDefs: [
+                        { targets: [1], className: 'd-none d-sm-table-cell' } // Oculta a coluna "Empresa" em telas menores que 576px
+                    ],
                     autoWidth: false, // Evita que o DataTables force larguras fixas nas colunas ocultas
-                    responsive: false // Desativado para usar o controle de visualização do próprio Bootstrap
+                    responsive: false, // Desativado para usar o controle de visualização do próprio Bootstrap
+                    processing: true,
+                    serverSide: true,
                 });
             });
+            
         </script>
 	</body>
 </html>

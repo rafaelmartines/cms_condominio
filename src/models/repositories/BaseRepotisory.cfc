@@ -14,8 +14,8 @@ component singleton {
 			arguments.sql,
 			arguments.params,
 			{
-				returntype : "struct",
-				keyColumn  : "CD_FORNECEDOR"
+				returntype : "array",
+				keyColumn  : arguments.keyColumn
 			}
 		);
 

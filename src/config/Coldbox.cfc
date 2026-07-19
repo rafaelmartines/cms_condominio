@@ -52,7 +52,8 @@ component {
 			// Will automatically do a mapDirectory() on your `models` for you.
 			autoMapModels            : true,
 			// Auto converts a json body payload into the RC
-			jsonPayloadToRC          : true
+			jsonPayloadToRC          : true,
+			debug                    : false
 		};
 
 		/**
