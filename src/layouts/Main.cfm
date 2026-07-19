@@ -48,9 +48,24 @@
 	<!---Top NavBar --->
 	<header>
 		<nav class="navbar navbar-expand-lg border-bottom bg-body-vertical">
-            <div class="container">
-                <a class="navbar-brand fw-bold" href="##"><i class="bi bi-building me-2 text-primary"></i>Vivão</a>
+           <div class="container d-flex justify-content-between align-items-center">
+            <!-- Esquerda -->
+            <a class="navbar-brand fw-bold" href="##">
+                <i class="bi bi-building me-2 text-primary"></i>Vivão
+            </a>
+
+            <!-- Direita -->
+            <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+                <ul class="navbar-nav mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="https://uclass.com.br/bn/vbstar/" target="_blank">
+                    <i class="bi bi-box-arrow-up-right"></i> Manual do Proprietário
+                    </a>
+                </li>
+                </ul>
             </div>
+            </div>
+            
         </nav>
 	</header>
 
@@ -142,32 +157,9 @@
             })()
         </script>
 
-        <!-- Inicialização do DataTables -->
-        <script>
-            $(document).ready(function() {
-                $('##minhaTabela').DataTable({
-                    language: {
-                        url: 'https://cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json',
-                    },
-                    ajax: {
-                        url: '/api/fornecedores'
-                    },
-                    columns: [
-                        { data: 'nmFornecedor' },
-                        { data: 'nmEmpresa' },
-                        { data: 'html', orderable: false, searchable: false }
-                    ],
-                    columnDefs: [
-                        { targets: [1], className: 'd-none d-sm-table-cell' } // Oculta a coluna "Empresa" em telas menores que 576px
-                    ],
-                    autoWidth: false, // Evita que o DataTables force larguras fixas nas colunas ocultas
-                    responsive: false, // Desativado para usar o controle de visualização do próprio Bootstrap
-                    processing: true,
-                    serverSide: true,
-                });
-            });
-            
-        </script>
+        <cfif structKeyExists( prc, "scripts" )>
+            #prc.scripts#
+        </cfif>
 	</body>
 </html>
 </cfoutput>

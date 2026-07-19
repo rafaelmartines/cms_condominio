@@ -50,6 +50,7 @@ component singleton extends="BaseRepotisory" {
         FROM
             CMSCONDOMINIO.TB_FORNECEDORES f
         #local.filtro.where#
+			ORDER BY #arguments.fornecedoresFiltroDTO.getOrderColumn()# #arguments.fornecedoresFiltroDTO.getOrderDir()#
         ";
 
 		local.resultado = variables.consulta(
