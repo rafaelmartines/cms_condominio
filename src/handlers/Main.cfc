@@ -45,6 +45,7 @@ component extends="coldbox.system.EventHandler" {
 	}
 
 	function onRequestStart( event, rc, prc ) {
+		application.environment = getEnv( "ENVIRONMENT" );
 	}
 
 	function onRequestEnd( event, rc, prc ) {

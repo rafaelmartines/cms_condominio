@@ -2,7 +2,6 @@
     <div class="card shadow-sm border-0">
         <div class="card-header d-flex justify-content-between align-items-center py-3 bg-body-secondary border-bottom">
             <h5 class="mb-0 fw-semibold"><i class="bi bi-person-rolodex me-2 text-primary"></i>Fornecedores</h5>
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Filtro Ativo</span>
         </div>
         <div class="card-body">
             

@@ -16,6 +16,16 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
         <style>
+            body {
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+            }
+            
+            main {
+                flex: 1;
+            }
+
             /* Estilos para o botão flutuante de tema */
             .theme-switcher {
                 position: fixed;
@@ -80,7 +90,23 @@
 	</main>
 
 	<!--- Footer --->
-	<footer>
+	<footer class="mt-auto py-3 border-top bg-body-vertical">
+        <div class="container d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+            <span class="text-muted small">© 2026 <strong class="text-body">Rafael Alves Sequini Martines</strong>. Todos os direitos reservados.</span>
+            
+            <!-- Redes Sociais -->
+            <div class="d-flex gap-3">
+                <!-- Substitua o '##' pelo link correto do seu perfil -->
+                <a href="https://www.linkedin.com/in/rafael-a-s-martines/" target="_blank" class="text-muted text-hover-primary fs-5" title="LinkedIn">
+                    <i class="bi bi-linkedin"></i>
+                </a>
+                <!-- Substitua o '##' pelo link correto do seu perfil -->
+                <a href="https://github.com/rafaelmartines/" target="_blank" class="text-muted text-hover-primary fs-5" title="GitHub">
+                    <i class="bi bi-github"></i>
+                </a>
+            </div>
+        </div>
+        
 		<!-- Menu Flutuante do Seletor de Tema -->
         <div class="dropdown theme-switcher">
             <button class="btn btn-primary btn-lg rounded-circle shadow d-flex align-items-center justify-content-center" 
@@ -161,6 +187,18 @@
                 })
             })()
         </script>
+
+        <!-- Google tag (gtag.js) -->
+        <if application.environment eq "production">
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-RNVDS3838M"></script>
+            <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+
+                gtag('config', 'G-RNVDS3838M');
+            </script>
+        </if>
 
         <cfif structKeyExists( prc, "scripts" )>
             #prc.scripts#
