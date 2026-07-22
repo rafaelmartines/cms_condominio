@@ -20,10 +20,24 @@
                 display: flex;
                 flex-direction: column;
                 min-height: 100vh;
+                padding-top: 76px; 
             }
             
             main {
                 flex: 1;
+            }
+
+            /* === EFEITO TRANSLÚCIDO DINÂMICO === */
+            .navbar {
+                transition: background-color 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
+            }
+
+            /* Classe aplicada via JS ao scrollar */
+            .navbar.scrolled {
+                background-color: rgba(var(--bs-body-bg-rgb), 0.75) !important;
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px); /* Suporte para Safari/iOS */
+                box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
             }
 
             /* Estilos para o botão flutuante de tema */
@@ -54,10 +68,10 @@
         </style>
     </head>
 </head>
-<body>
+<body class="bg-body-tertiary">
 	<!---Top NavBar --->
 	<header>
-		<nav class="navbar border-bottom bg-body-vertical">
+		<nav class="navbar fixed-top border-bottom bg-body-vertical" id="mainNavbar">
             <div class="container">
                 <a class="navbar-brand fw-bold" href="##"><i class="bi bi-building me-2 text-primary"></i>Vivão</a>
                 
@@ -78,21 +92,21 @@
                 <!-- Links do Menu -->
                 <div class="list-group list-group-flush">
                     <a href="/" class="list-group-item list-group-item-action active py-3"><i class="bi bi-house-door me-3"></i>Início</a>
-                    <a href="https://uclass.com.br/bn/vbstar/" target="_blank" class="list-group-item list-group-item-action py-3"><i class="bi bi-box-arrow-up-right"></i> Manual do Proprietário</a>
+                    <a href="https://uclass.com.br/bn/vbstar/" target="_blank" class="list-group-item list-group-item-action py-3"><i class="bi bi-box-arrow-up-right me-3"></i>Manual do Proprietário</a>
                 </div>
             </div>
         </div>
 	</header>
 
 	<!---Container And Views --->
-	<main class="container my-3 my-md-5">
+	<main class="container my-3 my-md-3">
 		#view()#
 	</main>
 
 	<!--- Footer --->
-	<footer class="mt-auto py-3 border-top bg-body-vertical">
+	<footer class="mt-3 py-3 border-top bg-body-vertical">
         <div class="container d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
-            <span class="text-muted small">© 2026 <strong class="text-body">Rafael Alves Sequini Martines</strong>. Todos os direitos reservados.</span>
+            <span class="text-muted small">Desenvolvido por <strong class="text-body">Rafael Alves Sequini Martines</strong>.</span>
             
             <!-- Redes Sociais -->
             <div class="d-flex gap-3">
@@ -146,7 +160,7 @@
         <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
 
         <!-- Lógica de Alternância de Tema -->
-        <script>
+        <script type="text/javascript">
             (() => {
                 'use strict'
                 const getStoredTheme = () => localStorage.getItem('theme')
@@ -185,20 +199,27 @@
                         })
                     })
                 })
-            })()
+            })();
+
+            window.addEventListener('scroll', function() {
+                const navbar = document.getElementById('mainNavbar');
+                if (window.scrollY > 20) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
         </script>
 
         <!-- Google tag (gtag.js) -->
-        <if application.environment eq "production">
-            <script async src="https://www.googletagmanager.com/gtag/js?id=G-RNVDS3838M"></script>
-            <script>
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-RNVDS3838M"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
 
-                gtag('config', 'G-RNVDS3838M');
-            </script>
-        </if>
+            gtag('config', 'G-RNVDS3838M');
+        </script>
 
         <cfif structKeyExists( prc, "scripts" )>
             #prc.scripts#
