@@ -1,6 +1,6 @@
 component singleton {
 
-	property name="baseRepository" inject="models.repositories.BaseRepotisory";
+	property name="baseRepository" inject="models.repositories.BaseRepository";
 
 	public Healthcheck function init() {
 		return this;
