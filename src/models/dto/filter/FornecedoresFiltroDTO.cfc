@@ -6,7 +6,7 @@ component accessors="true" {
 		type   ="numeric"
 		default="10";
 	property name="nmFornecedor" type="string";
-	property name="nmEmpresa"    type="string";
+	property name="cdCategoria"  type="string";
 	property
 		name  ="orderColumn"
 		type  ="string"

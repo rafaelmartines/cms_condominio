@@ -1,6 +1,6 @@
 component singleton {
 
-	public BaseRepotisory function init() {
+	public BaseRepository function init() {
 		return this;
 	}
 

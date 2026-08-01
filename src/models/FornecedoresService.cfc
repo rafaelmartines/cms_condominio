@@ -26,7 +26,7 @@ component singleton {
 				{
 					"cdFornecedor" : local.fornecedor.CD_FORNECEDOR,
 					"nmFornecedor" : local.fornecedor.NM_FORNECEDOR,
-					"nmEmpresa"    : local.fornecedor.NM_EMPRESA,
+					"categorias"   : local.fornecedor.CATEGORIAS,
 					"nrTelefone"   : local.fornecedor.NR_TELEFONE,
 					"txInstagram"  : local.fornecedor.TX_INSTAGRAM,
 					"html"         : local.acoes

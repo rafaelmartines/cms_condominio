@@ -1,4 +1,4 @@
-component singleton extends="BaseRepotisory" {
+component singleton extends="BaseRepository" {
 
 	property name="cbpaginator" inject="Pagination@cbpaginator";
 
@@ -10,7 +10,11 @@ component singleton extends="BaseRepotisory" {
 	private struct function mesclarFiltroFornecedores( required FornecedoresFiltroDTO fornecedoresFiltroDTO ) {
 		local.parametros = {};
 		local.where      = "WHERE 1=1 ";
-		if ( not isNull( arguments.fornecedoresFiltroDTO.getNmFornecedor() ) ) {
+		if (
+			not isNull( arguments.fornecedoresFiltroDTO.getNmFornecedor() ) and len(
+				trim( arguments.fornecedoresFiltroDTO.getNmFornecedor() )
+			)
+		) {
 			local.where &= " AND UPPER(f.nm_fornecedor) LIKE :nmFornecedor ";
 			structAppend(
 				local.parametros,
@@ -22,14 +26,18 @@ component singleton extends="BaseRepotisory" {
 				}
 			);
 		}
-		if ( not isNull( arguments.fornecedoresFiltroDTO.getNmEmpresa() ) ) {
-			local.where &= " AND UPPER(f.nm_empresa) LIKE :nmEmpresa ";
+		if (
+			not isNull( arguments.fornecedoresFiltroDTO.getCdCategoria() ) and len(
+				trim( arguments.fornecedoresFiltroDTO.getCdCategoria() )
+			)
+		) {
+			local.where &= " AND fc.cd_categoria = :cdCategoria ";
 			structAppend(
 				local.parametros,
 				{
-					nmEmpresa : {
-						value     : "%" & uCase( arguments.fornecedoresFiltroDTO.getNmEmpresa() ) & "%",
-						cfsqltype : "cf_sql_varchar"
+					cdCategoria : {
+						value     : arguments.fornecedoresFiltroDTO.getCdCategoria(),
+						cfsqltype : "cf_sql_integer"
 					}
 				}
 			);
@@ -45,12 +53,30 @@ component singleton extends="BaseRepotisory" {
 		local.page   = int( arguments.fornecedoresFiltroDTO.getStart() / arguments.fornecedoresFiltroDTO.getLength() ) + 1;
 
 		local.sql = "
-        SELECT
-            f.*
-        FROM
-            CMSCONDOMINIO.TB_FORNECEDORES f
-        #local.filtro.where#
-			ORDER BY #arguments.fornecedoresFiltroDTO.getOrderColumn()# #arguments.fornecedoresFiltroDTO.getOrderDir()#
+		WITH fornecedor_categoria AS (
+		SELECT
+			fc.cd_fornecedor,
+			c.tx_categoria,
+			c.cd_categoria
+		FROM
+			cmscondominio.tb_fornecedor_categoria fc
+			JOIN cmscondominio.tb_categoria c ON fc.cd_categoria = c.cd_categoria
+		)
+		SELECT
+			f.*,
+			STRING_AGG(fc.tx_categoria, ', ') AS categorias
+		FROM
+  			cmscondominio.tb_fornecedores f
+  		LEFT JOIN fornecedor_categoria fc ON f.cd_fornecedor = fc.cd_fornecedor
+		#local.filtro.where#
+		GROUP BY
+			f.cd_fornecedor,
+			f.nm_fornecedor,
+			f.nm_empresa,
+			f.nr_telefone,
+			f.tx_instagram
+		ORDER BY
+			#arguments.fornecedoresFiltroDTO.getOrderColumn()# #arguments.fornecedoresFiltroDTO.getOrderDir()#
         ";
 
 		local.resultado = variables.consulta(
