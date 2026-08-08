@@ -131,6 +131,12 @@
                             </div>
 
                             <div class="mb-3">
+                                <label for="numeroApartamento" class="form-label fw-medium">Número do Apartamento</label>
+                                <input type="number" class="form-control" id="numeroApartamento" placeholder="Ex: 101" required>
+                                <div class="invalid-feedback">Informe o número do seu apartamento.</div>
+                            </div>
+
+                            <div class="mb-3">
                                 <label for="textoComentario" class="form-label fw-medium">Comentário</label>
                                 <textarea class="form-control" id="textoComentario" rows="3" placeholder="Escreva sua experiência com este fornecedor..." required></textarea>
                                 <div class="invalid-feedback">Por favor, digite seu comentário.</div>
@@ -296,6 +302,7 @@
             const formData = {
                 nrNota: form.querySelector('input[name="rating"]:checked')?.value,
                 nmNome: document.getElementById('nomeAvaliador').value,
+                nrApartamento: document.getElementById('numeroApartamento').value,
                 txConteudo: document.getElementById('textoComentario').value,
                 cdFornecedor: cdFornecedor // Altere para o ID dinâmico do fornecedor se necessário
             };
