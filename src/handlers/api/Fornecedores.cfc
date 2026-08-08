@@ -11,4 +11,13 @@ component extends="coldbox.system.RestHandler" {
 		return getInstance( "FornecedoresService" ).getFornecedores( local.fornecedoresFiltroDTO );
 	}
 
+	remote any function postTestemunho( event, rc, prc ) renderData="json" {
+		local.corpo = deserializeJSON( arguments.event.getHttpContent() );
+
+		local.testemunhoDTO = populateModel( model = "TestemunhoDTO", memento = local.corpo );
+		local.testemunhoDTO.setCdFornecedor( arguments.rc.cdFornecedor );
+
+		return getInstance( "FornecedoresService" ).postTestemunho( local.testemunhoDTO );
+	}
+
 }

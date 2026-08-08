@@ -1,84 +1,91 @@
 <cfoutput>
 <!DOCTYPE html>
-    <html lang="pt-BR" data-bs-theme="dark">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Vivão - Lista de Fornecedores</title>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vivão - Lista de Fornecedores</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- DataTables Bootstrap 5 Styling CSS -->
+    <link href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding-top: 76px; 
+        }
         
-        <!-- Bootstrap 5 CSS -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-        
-        <!-- DataTables Bootstrap 5 Styling CSS -->
-        <link href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-        
-        <!-- Bootstrap Icons -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+        main {
+            flex: 1;
+        }
 
-        <style>
-            body {
-                display: flex;
-                flex-direction: column;
-                min-height: 100vh;
-                padding-top: 76px; 
-            }
-            
-            main {
-                flex: 1;
-            }
+        /* === EFEITO TRANSLÚCIDO DINÂMICO === */
+        .navbar {
+            transition: background-color 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
+        }
 
-            /* === EFEITO TRANSLÚCIDO DINÂMICO === */
-            .navbar {
-                transition: background-color 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
-            }
+        /* Classe aplicada via JS ao scrollar */
+        .navbar.scrolled {
+            background-color: rgba(var(--bs-body-bg-rgb), 0.75) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); /* Suporte para Safari/iOS */
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
 
-            /* Classe aplicada via JS ao scrollar */
-            .navbar.scrolled {
-                background-color: rgba(var(--bs-body-bg-rgb), 0.75) !important;
-                backdrop-filter: blur(10px);
-                -webkit-backdrop-filter: blur(10px); /* Suporte para Safari/iOS */
-                box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-            }
+        /* Estilos para o botão flutuante de tema */
+        .theme-switcher {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
 
-            /* Estilos para o botão flutuante de tema */
-            .theme-switcher {
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                z-index: 1050;
-            }
+        /* Ajustes dinâmicos para o DataTables herdar as variáveis de cor do Bootstrap */
+        .dt-search input, .dt-length select {
+            background-color: var(--bs-body-bg) !important;
+            color: var(--bs-body-color) !important;
+            border: 1px solid var(--bs-border-color) !important;
+        }
 
-            /* Ajustes dinâmicos para o DataTables herdar as variáveis de cor do Bootstrap */
-            .dt-search input, .dt-length select {
-                background-color: var(--bs-body-bg) !important;
-                color: var(--bs-body-color) !important;
-                border: 1px solid var(--bs-border-color) !important;
+        /* Ajuste mobile: diminui um pouco as fontes do DataTables em telas muito pequenas */
+        @media (max-width: 576px) {
+            .dt-search, .dt-length, .dt-info, .dt-paging {
+                font-size: 0.875rem;
+                margin-bottom: 0.5rem;
             }
-
-            /* Ajuste mobile: diminui um pouco as fontes do DataTables em telas muito pequenas */
-            @media (max-width: 576px) {
-                .dt-search, .dt-length, .dt-info, .dt-paging {
-                    font-size: 0.875rem;
-                    margin-bottom: 0.5rem;
-                }
-                .card-body {
-                    padding: 0.75rem;
-                }
+            .card-body {
+                padding: 0.75rem;
             }
-        </style>
-    </head>
+        }
+    </style>
 </head>
 <body class="bg-body-tertiary">
 	<!---Top NavBar --->
 	<header>
 		<nav class="navbar fixed-top border-bottom bg-body-vertical" id="mainNavbar">
             <div class="container">
-                <a class="navbar-brand fw-bold" href="##"><i class="bi bi-building me-2 text-primary"></i>Vivão</a>
+                <a class="navbar-brand fw-bold" href="/"><i class="bi bi-building me-2 text-primary"></i>Vivão</a>
                 
-                <!-- O botão de hamburguer agora fica visível em qualquer resolução -->
-                <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="offcanvas" data-bs-target="##menuLateralDireito" aria-controls="menuLateralDireito">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+                <!-- Grupo de botões alinhados à direita -->
+                <div class="d-flex align-items-center gap-2 ms-auto">
+                    <!-- Botão Alternador de Tema (Substituiu a div dropdown theme-switcher) -->
+                    <button type="button" class="btn btn-outline-secondary d-flex align-items-center justify-content-center" id="btnToggleTheme" aria-label="Alternar Tema" style="width: 40px; height: 40px;">
+                        <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+                    </button>
+
+                    <!-- Botão do Menu Hambúrguer -->
+                    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="##menuLateralDireito" aria-controls="menuLateralDireito">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                </div>
             </div>
         </nav>
 
@@ -120,31 +127,6 @@
                 </a>
             </div>
         </div>
-        
-		<!-- Menu Flutuante do Seletor de Tema -->
-        <div class="dropdown theme-switcher">
-            <button class="btn btn-primary btn-lg rounded-circle shadow d-flex align-items-center justify-content-center" 
-                    id="bd-theme" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 50px; height: 50px;">
-                <i class="bi bi-circle-half" id="theme-icon-active"></i>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="bd-theme">
-                <li>
-                    <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light">
-                        <i class="bi bi-sun-fill me-2"></i> Light
-                    </button>
-                </li>
-                <li>
-                    <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark">
-                        <i class="bi bi-moon-stars-fill me-2"></i> Dark
-                    </button>
-                </li>
-                <li>
-                    <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="auto">
-                        <i class="bi bi-circle-half me-2"></i> Sistema
-                    </button>
-                </li>
-            </ul>
-        </div>
 	</footer>
 
 	<!---
@@ -160,55 +142,61 @@
         <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
 
         <!-- Lógica de Alternância de Tema -->
-        <script type="text/javascript">
+        <script>
             (() => {
                 'use strict'
-                const getStoredTheme = () => localStorage.getItem('theme')
-                const setStoredTheme = theme => localStorage.setItem('theme', theme)
+                
+                const btnToggle = document.getElementById('btnToggleTheme');
+                const themeIcon = document.getElementById('themeIcon');
+
+                // Detecta tema preferido (Local Storage ou Sistema)
                 const getPreferredTheme = () => {
-                    const storedTheme = getStoredTheme()
-                    if (storedTheme) return storedTheme
-                    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+                    const storedTheme = localStorage.getItem('theme');
+                    if (storedTheme) {
+                        return storedTheme;
+                    }
+                    // Se não houver nada salvo, herda do sistema operacional
+                    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                 }
-                const setTheme = theme => {
-                    if (theme === 'auto') {
-                        document.documentElement.setAttribute('data-bs-theme', (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))
+
+                // Aplica o tema na tag <html> e ajusta o ícone do botão
+                const setTheme = (theme) => {
+                    document.documentElement.setAttribute('data-bs-theme', theme);
+                    localStorage.setItem('theme', theme);
+
+                    if (theme === 'dark') {
+                        themeIcon.className = 'bi bi-moon-stars-fill';
                     } else {
-                        document.documentElement.setAttribute('data-bs-theme', theme)
+                        themeIcon.className = 'bi bi-sun-fill';
                     }
                 }
-                const updateIcon = (theme) => {
-                    const activeIcon = document.querySelector('##theme-icon-active')
-                    if (theme === 'light') activeIcon.className = 'bi bi-sun-fill'
-                    else if (theme === 'dark') activeIcon.className = 'bi bi-moon-stars-fill'
-                    else activeIcon.className = 'bi bi-circle-half'
-                }
-                setTheme(getPreferredTheme())
-                updateIcon(getPreferredTheme())
-                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-                    const storedTheme = getStoredTheme()
-                    if (storedTheme !== 'light' && storedTheme !== 'dark') setTheme(getPreferredTheme())
-                })
-                window.addEventListener('DOMContentLoaded', () => {
-                    document.querySelectorAll('[data-bs-theme-value]').forEach(toggle => {
-                        toggle.addEventListener('click', () => {
-                            const theme = toggle.getAttribute('data-bs-theme-value')
-                            setStoredTheme(theme)
-                            setTheme(theme)
-                            updateIcon(theme)
-                        })
-                    })
-                })
-            })();
 
-            window.addEventListener('scroll', function() {
-                const navbar = document.getElementById('mainNavbar');
-                if (window.scrollY > 20) {
-                    navbar.classList.add('scrolled');
-                } else {
-                    navbar.classList.remove('scrolled');
-                }
-            });
+                // Inicializa com a preferência identificada
+                setTheme(getPreferredTheme());
+
+                // Ação de clique: Inverte o tema atual
+                btnToggle.addEventListener('click', () => {
+                    const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    setTheme(newTheme);
+                });
+
+                // Ouve alterações no sistema operacional do usuário dinamicamente
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    if (!localStorage.getItem('theme')) {
+                        setTheme(e.matches ? 'dark' : 'light');
+                    }
+                });
+
+                window.addEventListener('scroll', function() {
+                    const navbar = document.getElementById('mainNavbar');
+                    if (window.scrollY > 20) {
+                        navbar.classList.add('scrolled');
+                    } else {
+                        navbar.classList.remove('scrolled');
+                    }
+                });
+            })();
         </script>
 
         <!-- Google tag (gtag.js) -->
@@ -221,6 +209,9 @@
             gtag('config', 'G-RNVDS3838M');
         </script>
 
+        <cfif structKeyExists( prc, "styles" )>
+            #prc.styles#
+        </cfif>
         <cfif structKeyExists( prc, "scripts" )>
             #prc.scripts#
         </cfif>

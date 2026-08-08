@@ -56,7 +56,7 @@
 </cfoutput>
 
 <cfsavecontent variable="prc.scripts">
-    <script type="text/javascript">
+    <script>
         $(document).ready(function() {
             var table = $('#minhaTabela').DataTable({
                 language: {

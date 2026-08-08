@@ -93,4 +93,41 @@ component singleton extends="BaseRepository" {
 		);
 	}
 
+	public struct function getFornecedor( required numeric cdFornecedor ) {
+		local.sql = "
+			WITH fornecedor_categoria AS (
+			SELECT
+				fc.cd_fornecedor,
+				c.tx_categoria,
+				c.cd_categoria
+			FROM
+				cmscondominio.tb_fornecedor_categoria fc
+				JOIN cmscondominio.tb_categoria c ON fc.cd_categoria = c.cd_categoria
+			)
+			SELECT
+				f.*,
+				STRING_AGG(fc.tx_categoria, ', ') AS categorias
+			FROM
+				cmscondominio.tb_fornecedores f
+			LEFT JOIN fornecedor_categoria fc ON f.cd_fornecedor = fc.cd_fornecedor
+			WHERE
+				f.cd_fornecedor = :cdFornecedor
+			GROUP BY
+				f.cd_fornecedor,
+				f.nm_fornecedor,
+				f.nm_empresa,
+				f.nr_telefone,
+				f.tx_instagram
+		";
+
+		local.parametros = {
+			cdFornecedor : {
+				value     : arguments.cdFornecedor,
+				cfsqltype : "cf_sql_integer"
+			}
+		};
+
+		return variables.consulta( local.sql, local.parametros, false );
+	}
+
 }
