@@ -33,6 +33,8 @@ component {
 		post( "/api/fornecedores/:cdFornecedor/testemunho", "api.Fornecedores.postTestemunho" );
 		get( "/api/fornecedores", "api.Fornecedores.getFornecedores" );
 
+		get( "/fornecedores/:cdFornecedor", "Fornecedores.getFornecedor" );
+
 		// Conventions-Based Routing
 		route( ":handler/:action?" ).end();
 	}

@@ -1,6 +1,6 @@
 component singleton {
 
-	public any function enviarEmail( required struct corpoEmail ) {
+	public boolean function enviarEmail( required struct corpoEmail ) {
 		structAppend(
 			arguments.corpoEmail,
 			{
@@ -13,7 +13,7 @@ component singleton {
 			method  = "POST",
 			charset = "utf-8",
 			url     = application.resendUri,
-			result  = "result"
+			result  = "local.resultado"
 		) {
 			cfhttpparam(
 				type  = "header",
@@ -28,8 +28,14 @@ component singleton {
 			cfhttpparam( type = "body", value = serializeJSON( arguments.corpoEmail ) );
 		}
 
-		writeDump( var = result, label = "Resend API Response" );
-		abort;
+		if ( not local.resultado.statusCode contains "200" ) {
+			throw(
+				type    = "ResendException",
+				message = "Falha ao enviar e-mail via Resend API. Código de status: #local.resultado.statusCode#"
+			);
+		}
+
+		return true;
 	}
 
 }

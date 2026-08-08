@@ -1,79 +1,78 @@
 <cfoutput>
 <!DOCTYPE html>
-    <html lang="pt-BR" data-bs-theme="dark">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Vivão - Lista de Fornecedores</title>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vivão - Lista de Fornecedores</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- DataTables Bootstrap 5 Styling CSS -->
+    <link href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding-top: 76px; 
+        }
         
-        <!-- Bootstrap 5 CSS -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-        
-        <!-- DataTables Bootstrap 5 Styling CSS -->
-        <link href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-        
-        <!-- Bootstrap Icons -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+        main {
+            flex: 1;
+        }
 
-        <style>
-            body {
-                display: flex;
-                flex-direction: column;
-                min-height: 100vh;
-                padding-top: 76px; 
-            }
-            
-            main {
-                flex: 1;
-            }
+        /* === EFEITO TRANSLÚCIDO DINÂMICO === */
+        .navbar {
+            transition: background-color 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
+        }
 
-            /* === EFEITO TRANSLÚCIDO DINÂMICO === */
-            .navbar {
-                transition: background-color 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
-            }
+        /* Classe aplicada via JS ao scrollar */
+        .navbar.scrolled {
+            background-color: rgba(var(--bs-body-bg-rgb), 0.75) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); /* Suporte para Safari/iOS */
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
 
-            /* Classe aplicada via JS ao scrollar */
-            .navbar.scrolled {
-                background-color: rgba(var(--bs-body-bg-rgb), 0.75) !important;
-                backdrop-filter: blur(10px);
-                -webkit-backdrop-filter: blur(10px); /* Suporte para Safari/iOS */
-                box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-            }
+        /* Estilos para o botão flutuante de tema */
+        .theme-switcher {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
 
-            /* Estilos para o botão flutuante de tema */
-            .theme-switcher {
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                z-index: 1050;
-            }
+        /* Ajustes dinâmicos para o DataTables herdar as variáveis de cor do Bootstrap */
+        .dt-search input, .dt-length select {
+            background-color: var(--bs-body-bg) !important;
+            color: var(--bs-body-color) !important;
+            border: 1px solid var(--bs-border-color) !important;
+        }
 
-            /* Ajustes dinâmicos para o DataTables herdar as variáveis de cor do Bootstrap */
-            .dt-search input, .dt-length select {
-                background-color: var(--bs-body-bg) !important;
-                color: var(--bs-body-color) !important;
-                border: 1px solid var(--bs-border-color) !important;
+        /* Ajuste mobile: diminui um pouco as fontes do DataTables em telas muito pequenas */
+        @media (max-width: 576px) {
+            .dt-search, .dt-length, .dt-info, .dt-paging {
+                font-size: 0.875rem;
+                margin-bottom: 0.5rem;
             }
-
-            /* Ajuste mobile: diminui um pouco as fontes do DataTables em telas muito pequenas */
-            @media (max-width: 576px) {
-                .dt-search, .dt-length, .dt-info, .dt-paging {
-                    font-size: 0.875rem;
-                    margin-bottom: 0.5rem;
-                }
-                .card-body {
-                    padding: 0.75rem;
-                }
+            .card-body {
+                padding: 0.75rem;
             }
-        </style>
-    </head>
+        }
+    </style>
 </head>
 <body class="bg-body-tertiary">
 	<!---Top NavBar --->
 	<header>
 		<nav class="navbar fixed-top border-bottom bg-body-vertical" id="mainNavbar">
             <div class="container">
-                <a class="navbar-brand fw-bold" href="##"><i class="bi bi-building me-2 text-primary"></i>Vivão</a>
+                <a class="navbar-brand fw-bold" href="/"><i class="bi bi-building me-2 text-primary"></i>Vivão</a>
                 
                 <!-- Grupo de botões alinhados à direita -->
                 <div class="d-flex align-items-center gap-2 ms-auto">
@@ -210,6 +209,9 @@
             gtag('config', 'G-RNVDS3838M');
         </script>
 
+        <cfif structKeyExists( prc, "styles" )>
+            #prc.styles#
+        </cfif>
         <cfif structKeyExists( prc, "scripts" )>
             #prc.scripts#
         </cfif>
