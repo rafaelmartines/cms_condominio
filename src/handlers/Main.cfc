@@ -44,6 +44,10 @@ component extends="coldbox.system.EventHandler" {
 	 */
 
 	function onAppInit( event, rc, prc ) {
+		application.resendUri  = getEnv( "RESEND_URI" );
+		application.resendKey  = getEnv( "RESEND_KEY" );
+		application.resendFrom = getEnv( "RESEND_FROM" );
+		application.resendTo   = getEnv( "RESEND_TO" );
 	}
 
 	function onRequestStart( event, rc, prc ) {

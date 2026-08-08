@@ -1,6 +1,7 @@
 component singleton {
 
 	property name="fornecedoresRepository" inject="FornecedoresRepository";
+	property name="resend"                 inject="Resend";
 
 	public FornecedoresService function init() {
 		return this;
@@ -39,6 +40,16 @@ component singleton {
 			"recordsTotal"    : local.fornecedores.pagination.totalRecords,
 			"recordsFiltered" : local.fornecedores.pagination.totalRecords
 		};
+	}
+
+	public void function postTestemunho( required TestemunhoDTO testemunhoDTO ) {
+		local.corpoEmail = {
+			"subject" : "Novo Testemunho para Fornecedor #testemunhoDTO.getCdFornecedor()#",
+			"html"    : "<h1>Novo Testemunho</h1><p>Fornecedor: #testemunhoDTO.getCdFornecedor()#</p><p>Nota: #testemunhoDTO.getNrNota()#</p><p>Apartamento: #testemunhoDTO.getNrApartamento()#</p><p>Nome: #testemunhoDTO.getNmNome()#</p><p>Conteúdo: #testemunhoDTO.getTxConteudo()#</p>"
+		};
+
+		variables.resend.enviarEmail( corpoEmail = local.corpoEmail );
+		abort;
 	}
 
 }
