@@ -13,7 +13,7 @@ component singleton extends="BaseRepository" {
         WHERE
             c.in_ativo = TRUE
         ORDER BY
-            c.cd_categoria
+            c.tx_categoria ASC
         ";
 
 		return variables.consulta( local.sql );

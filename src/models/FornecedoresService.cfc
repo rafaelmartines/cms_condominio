@@ -17,7 +17,7 @@ component singleton {
 			local.acoes = "
             <div class='btn-group' role='group' aria-label='Basic example'>
                 <a href='https://wa.me/#local.fornecedor.NR_TELEFONE#' target='_blank' class='btn btn-primary btn-success'><i class='bi bi-whatsapp'></i></a>
-                <a href='fornecedores/#local.fornecedor.CD_FORNECEDOR#/fornecedor' class='btn btn-outline-info'><i class='bi bi-card-heading'></i></a>
+                <a href='fornecedores/#local.fornecedor.CD_FORNECEDOR#' class='btn btn-outline-info'><i class='bi bi-card-heading'></i></a>
             </div>
             ";
 
