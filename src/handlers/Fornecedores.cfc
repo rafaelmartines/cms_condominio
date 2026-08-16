@@ -2,6 +2,7 @@ component extends="coldbox.system.EventHandler" {
 
 	public any function getFornecedor( event, rc, prc ) {
 		arguments.prc.fornecedor  = getInstance( "FornecedoresService" ).getFornecedor( arguments.rc.cdFornecedor );
+		arguments.prc.titulo = "Detalhes - #arguments.prc.fornecedor.nmFornecedor#";
 		arguments.prc.comentarios = getInstance( "FornecedoresService" ).getComentariosPorFornecedor(
 			arguments.rc.cdFornecedor
 		);

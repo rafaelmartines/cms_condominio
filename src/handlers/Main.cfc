@@ -7,6 +7,7 @@ component extends="coldbox.system.EventHandler" {
 		param arguments.rc.orderDir     = arguments.rc[ "order[0][dir]" ] ?: "asc";
 
 		local.fornecedoresFiltroDTO = populateModel( "FornecedoresFiltroDTO" );
+		arguments.prc.titulo        = "Lista de Fornecedores";
 		arguments.prc.categorias    = getInstance( "CategoriaService" ).obterCategorias();
 		arguments.prc.fornecedores  = getInstance( "FornecedoresService" ).getFornecedores( local.fornecedoresFiltroDTO );
 
