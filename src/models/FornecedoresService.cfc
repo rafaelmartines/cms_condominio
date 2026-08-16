@@ -63,4 +63,31 @@ component singleton {
 		return variables.resend.enviarEmail( corpoEmail = local.corpoEmail );
 	}
 
+	public array function getComentariosPorFornecedor( required numeric cdFornecedor ) {
+		local.comentarios = variables.fornecedoresRepository.getComentariosPorFornecedor( arguments.cdFornecedor );
+
+		local.resultado = [];
+
+		for ( local.comentario in local.comentarios ) {
+			arrayAppend(
+				local.resultado,
+				{
+					"nrNota"        : local.comentario.NR_NOTA,
+					"txConteudo"    : local.comentario.TX_CONTEUDO,
+					"nrApartamento" : local.comentario.NR_APARTAMENTO,
+					"nmNome"        : local.comentario.NM_NOME,
+					"tsCriadoEm"    : local.comentario.TS_CRIADO_EM
+				}
+			);
+		}
+
+		return local.resultado;
+	}
+
+	public struct function getMedia( required numeric cdFornecedor ) {
+		local.media = variables.fornecedoresRepository.getMedia( arguments.cdFornecedor );
+
+		return { "media" : local.media.MEDIA };
+	}
+
 }
