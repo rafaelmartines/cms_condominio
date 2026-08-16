@@ -7,13 +7,13 @@
     <title>Vivão - Lista de Fornecedores</title>
     
     <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/includes/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- DataTables Bootstrap 5 Styling CSS -->
-    <link href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="/includes/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     
     <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="/includes/css/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
 
     <style>
         body {

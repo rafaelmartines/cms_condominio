@@ -44,18 +44,32 @@
                                 <h3 class="fw-bold mb-1">#prc.fornecedor.nmFornecedor#</h3>
                             </div>
                             
+                            <cfset media = prc.media.media>
+                            <cfset fullStars = int( media )>
+                            <cfset halfStar = (( media - fullStars ) gte 0.5 ? 1 : 0)>
+                            <cfset emptyStars = 5 - ( fullStars + halfStar )>
+
                             <!-- Classificação por Estrelas (Média Geral) -->
-                            <!--- <div class="text-md-end">
+                            <div class="text-md-end">
                                 <div class="text-warning fs-4">
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-half"></i>
+                                    <!-- Estrelas cheias -->
+                                    <cfloop from="1" to="#fullStars#" index="i">
+                                        <i class="bi bi-star-fill"></i>
+                                    </cfloop>
+
+                                    <!-- Meia estrela -->
+                                    <cfif halfStar>
+                                        <i class="bi bi-star-half"></i>
+                                    </cfif>
+
+                                    <!-- Estrelas vazias -->
+                                    <cfloop from="1" to="#emptyStars#" index="i">
+                                        <i class="bi bi-star"></i>
+                                    </cfloop>
                                 </div>
-                                <span class="fw-bold fs-5">4.8</span>
-                                <span class="text-muted small">(42 avaliações)</span>
-                            </div> --->
+                                <span class="fw-bold fs-5">#prc.media.media#</span>
+                                <span class="text-muted small">(#arrayLen(prc.comentarios)# #arrayLen(prc.comentarios) eq 1 ? "avaliações" : "avaliação"#)</span>
+                            </div>
                         </div>
 
                         <hr class="my-3 text-secondary opacity-25">
@@ -154,80 +168,38 @@
                 <!-- Seção de Lista de Comentários -->
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-body-secondary py-3 border-bottom d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 fw-semibold"><i class="bi bi-chat-square-text me-2 text-primary"></i>Comentários Recentes (Em breve)</h5>
-                        <!--- <span class="badge bg-secondary-subtle text-body border border-secondary-subtle">3 exibidos</span> --->
+                        <h5 class="mb-0 fw-semibold"><i class="bi bi-chat-square-text me-2 text-primary"></i>Comentários Recentes</h5>
+                        <span class="badge bg-secondary-subtle text-body border border-secondary-subtle">#arrayLen( prc.comentarios )# exibido(s)</span>
                     </div>
-                    <!--- <div class="card-body p-4">
+                    <div class="card-body p-4">
                         
                         <!-- Lista de Comentários -->
                         <div class="d-flex flex-column gap-4">
-                            
-                            <!-- Comentário 1 -->
-                            <div class="d-flex gap-3 align-items-start border-bottom pb-3">
-                                <div class="avatar-circle bg-primary-subtle text-primary">
-                                    MS
-                                </div>
-                                <div class="w-100">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <h6 class="mb-0 fw-bold">Mariana Silva</h6>
-                                        <small class="text-muted">Há 2 dias</small>
+                            <cfloop array="#prc.comentarios#" index="comentario">
+                                <div class="d-flex gap-3 align-items-start border-bottom pb-3">
+                                    <div class="avatar-circle bg-primary-subtle text-primary">
+                                        #left( comentario.nmNome, 2 )#
                                     </div>
-                                    <div class="text-warning small mb-2">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
+                                    <div class="w-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <h6 class="mb-0 fw-bold">#comentario.nmNome# #comentario.nrApartamento ? " - Apto #comentario.nrApartamento#" : "" #</h6>
+                                            <small class="text-muted">Há #dateDiff( "d", comentario.tsCriadoEm, now() )# dias</small>
+                                        </div>
+                                        <div class="text-warning small mb-2">
+                                            <cfloop from="1" to="#comentario.nrNota#" index="i">
+                                                <i class="bi bi-star-fill"></i>
+                                            </cfloop>
+                                            <cfloop from="#comentario.nrNota + 1#" to="5" index="j">
+                                                <i class="bi bi-star"></i>
+                                            </cfloop>
+                                        </div>
+                                        <p class="mb-0 text-body-secondary">#comentario.txConteudo#</p>
                                     </div>
-                                    <p class="mb-0 text-body-secondary">Entrega rápida e excelente atendimento. Os produtos chegaram em perfeito estado e antes do prazo combinado.</p>
                                 </div>
-                            </div>
-
-                            <!-- Comentário 2 -->
-                            <div class="d-flex gap-3 align-items-start border-bottom pb-3">
-                                <div class="avatar-circle bg-success-subtle text-success">
-                                    R2
-                                </div>
-                                <div class="w-100">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <h6 class="mb-0 fw-bold">Roberto Souza</h6>
-                                        <small class="text-muted">Há 1 semana</small>
-                                    </div>
-                                    <div class="text-warning small mb-2">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star"></i>
-                                    </div>
-                                    <p class="mb-0 text-body-secondary">Ótima variedade de produtos. Tivemos um pequeno atraso na emissão da nota fiscal, mas resolveram rapidamente via WhatsApp.</p>
-                                </div>
-                            </div>
-
-                            <!-- Comentário 3 -->
-                            <div class="d-flex gap-3 align-items-start">
-                                <div class="avatar-circle bg-warning-subtle text-warning">
-                                    FP
-                                </div>
-                                <div class="w-100">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <h6 class="mb-0 fw-bold">Fernanda Pereira</h6>
-                                        <small class="text-muted">Há 3 semanas</small>
-                                    </div>
-                                    <div class="text-warning small mb-2">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                    </div>
-                                    <p class="mb-0 text-body-secondary">Parceiro de confiança há mais de 2 anos. Sempre cobrem os preços da concorrência e oferecem ótimas condições de pagamento.</p>
-                                </div>
-                            </div>
-
+                            </cfloop>
                         </div>
 
-                    </div> --->
+                    </div>
                 </div>
 
             </div>

@@ -17,7 +17,7 @@ component singleton {
 			local.acoes = "
             <div class='btn-group' role='group' aria-label='Basic example'>
                 <a href='https://wa.me/#local.fornecedor.NR_TELEFONE#' target='_blank' class='btn btn-primary btn-success'><i class='bi bi-whatsapp'></i></a>
-                <a href='fornecedores/#local.fornecedor.CD_FORNECEDOR#/fornecedor' class='btn btn-outline-info'><i class='bi bi-card-heading'></i></a>
+                <a href='fornecedores/#local.fornecedor.CD_FORNECEDOR#' class='btn btn-outline-info'><i class='bi bi-card-heading'></i></a>
             </div>
             ";
 
@@ -61,6 +61,33 @@ component singleton {
 		};
 
 		return variables.resend.enviarEmail( corpoEmail = local.corpoEmail );
+	}
+
+	public array function getComentariosPorFornecedor( required numeric cdFornecedor ) {
+		local.comentarios = variables.fornecedoresRepository.getComentariosPorFornecedor( arguments.cdFornecedor );
+
+		local.resultado = [];
+
+		for ( local.comentario in local.comentarios ) {
+			arrayAppend(
+				local.resultado,
+				{
+					"nrNota"        : local.comentario.NR_NOTA,
+					"txConteudo"    : local.comentario.TX_CONTEUDO,
+					"nrApartamento" : local.comentario.NR_APARTAMENTO,
+					"nmNome"        : local.comentario.NM_NOME,
+					"tsCriadoEm"    : local.comentario.TS_CRIADO_EM
+				}
+			);
+		}
+
+		return local.resultado;
+	}
+
+	public struct function getMedia( required numeric cdFornecedor ) {
+		local.media = variables.fornecedoresRepository.getMedia( arguments.cdFornecedor );
+
+		return { "media" : local.media.MEDIA };
 	}
 
 }

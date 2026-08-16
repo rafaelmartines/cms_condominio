@@ -15,7 +15,7 @@ component singleton extends="BaseRepository" {
 				trim( arguments.fornecedoresFiltroDTO.getNmFornecedor() )
 			)
 		) {
-			local.where &= " AND UPPER(f.nm_fornecedor) LIKE :nmFornecedor ";
+			local.where &= " AND UPPER(cmscondominio.unaccent(CAST(f.nm_fornecedor as text))) LIKE cmscondominio.unaccent(CAST(:nmFornecedor as text)) ";
 			structAppend(
 				local.parametros,
 				{
@@ -79,6 +79,9 @@ component singleton extends="BaseRepository" {
 			#arguments.fornecedoresFiltroDTO.getOrderColumn()# #arguments.fornecedoresFiltroDTO.getOrderDir()#
         ";
 
+		// writeDump( var = local.sql, label = "SQL Fornecedores" );
+		// writeDump( var = local.filtro.parametros, label = "Parâmetros Fornecedores" );
+		// abort;
 		local.resultado = variables.consulta(
 			local.sql,
 			local.filtro.parametros,
@@ -118,6 +121,46 @@ component singleton extends="BaseRepository" {
 				f.nm_empresa,
 				f.nr_telefone,
 				f.tx_instagram
+		";
+
+		local.parametros = {
+			cdFornecedor : {
+				value     : arguments.cdFornecedor,
+				cfsqltype : "cf_sql_integer"
+			}
+		};
+
+		return variables.consulta( local.sql, local.parametros, false );
+	}
+
+	public array function getComentariosPorFornecedor( required numeric cdFornecedor ) {
+		local.sql = "
+			SELECT
+				c.*
+			FROM
+				cmscondominio.tb_comentarios c
+			WHERE
+				c.cd_fornecedor = :cdFornecedor
+		";
+
+		local.parametros = {
+			cdFornecedor : {
+				value     : arguments.cdFornecedor,
+				cfsqltype : "cf_sql_integer"
+			}
+		};
+
+		return variables.consulta( local.sql, local.parametros, true );
+	}
+
+	public struct function getMedia( required numeric cdFornecedor ) {
+		local.sql = "
+			SELECT
+				COALESCE(AVG(c.nr_nota), 0) AS media
+			FROM
+				cmscondominio.tb_comentarios c
+			WHERE
+				c.cd_fornecedor = :cdFornecedor;
 		";
 
 		local.parametros = {
