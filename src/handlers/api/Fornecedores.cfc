@@ -20,4 +20,12 @@ component extends="coldbox.system.RestHandler" {
 		return getInstance( "FornecedoresService" ).postTestemunho( local.testemunhoDTO );
 	}
 
+	remote any function indicacao( event, rc, prc ) renderData="json" {
+		local.corpo = deserializeJSON( arguments.event.getHttpContent() );
+
+		local.indicacaoDTO = populateModel( model = "IndicacaoDTO", memento = local.corpo );
+
+		return getInstance( "FornecedoresService" ).postIndicacao( local.indicacaoDTO );
+	}
+
 }

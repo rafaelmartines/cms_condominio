@@ -99,6 +99,7 @@
                 <!-- Links do Menu -->
                 <div class="list-group list-group-flush">
                     <a href="/" class="list-group-item list-group-item-action active py-3"><i class="bi bi-house-door me-3"></i>Início</a>
+                    <a href="/fornecedores/adicionar" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3"></i>Indicar Novo Fornecedor</a>
                     <a href="https://uclass.com.br/bn/vbstar/" target="_blank" class="list-group-item list-group-item-action py-3"><i class="bi bi-box-arrow-up-right me-3"></i>Manual do Proprietário</a>
                 </div>
             </div>

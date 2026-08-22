@@ -30,9 +30,11 @@ component {
 		} );
 
 		// @app_routes@
+		post( "/api/fornecedores/indicacao", "api.Fornecedores.indicacao" );
 		post( "/api/fornecedores/:cdFornecedor/testemunho", "api.Fornecedores.postTestemunho" );
 		get( "/api/fornecedores", "api.Fornecedores.getFornecedores" );
 
+		get( "/fornecedores/adicionar", "Fornecedores.addFornecedor" );
 		get( "/fornecedores/:cdFornecedor", "Fornecedores.getFornecedor" );
 
 		// Conventions-Based Routing

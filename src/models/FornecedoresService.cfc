@@ -55,9 +55,27 @@ component singleton {
 	}
 
 	public boolean function postTestemunho( required TestemunhoDTO testemunhoDTO ) {
+		// Serializa o DTO para JSON
+		var dtoJson = serializeJSON( testemunhoDTO );
+
+		// Monta corpo do e-mail
 		local.corpoEmail = {
 			"subject" : "Novo Testemunho para Fornecedor #testemunhoDTO.getCdFornecedor()#",
-			"html"    : "<h1>Novo Testemunho</h1><p>Fornecedor: #testemunhoDTO.getCdFornecedor()#</p><p>Nota: #testemunhoDTO.getNrNota()#</p><p>Apartamento: #testemunhoDTO.getNrApartamento()#</p><p>Nome: #testemunhoDTO.getNmNome()#</p><p>Conteúdo: #testemunhoDTO.getTxConteudo()#</p>"
+			"html"    : "<h1>Novo Testemunho</h1><pre>#encodeForHTML( dtoJson )#</pre>"
+		};
+
+		return variables.resend.enviarEmail( corpoEmail = local.corpoEmail );
+	}
+
+
+	public boolean function postIndicacao( required IndicacaoDTO indicacaoDTO ) {
+		// Serializa o DTO para JSON
+		local.dtoJson = serializeJSON( arguments.indicacaoDTO );
+
+		// Monta corpo do e-mail
+		local.corpoEmail = {
+			"subject" : "Nova Indicação de Fornecedor",
+			"html"    : "<h1>Nova Indicação</h1><pre>#encodeForHTML( local.dtoJson )#</pre>"
 		};
 
 		return variables.resend.enviarEmail( corpoEmail = local.corpoEmail );
