@@ -24,7 +24,7 @@
         "cbdebugger":"^4.4.0+6"
     },
     "dependencies":{
-        "coldbox":"8.1.0+34",
+        "coldbox":"8.2.0+35",
         "quick":"^12.0.12",
         "cbpaginator":"^2.8.3",
         "commandbox-bullet-train":"^1.4.2"

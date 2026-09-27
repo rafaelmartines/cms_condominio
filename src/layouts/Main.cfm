@@ -7,13 +7,13 @@
     <title>Vivão - #prc.titulo#</title>
     
     <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/includes/vendor/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- DataTables Bootstrap 5 Styling CSS -->
-    <link href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="/includes/vendor/datatables/2.0.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     
     <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="/includes/vendor/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
     <style>
         body {
@@ -137,10 +137,10 @@
 		- Alpine.js
 	--->
     <!-- Scripts Necessários -->
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
-        <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
+        <script src="/includes/vendor/jquery/3.7.1/js/jquery-3.7.1.min.js"></script>
+        <script src="/includes/vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+        <script src="/includes/vendor/datatables/2.0.8/js/dataTables.min.js"></script>
+        <script src="/includes/vendor/datatables/2.0.8/js/dataTables.bootstrap5.min.js"></script>
 
         <!-- Lógica de Alternância de Tema -->
         <script>

@@ -1,0 +1,110 @@
+[
+  {
+    "arquivo": "bootstrap/5.3.3/css/bootstrap.min.css",
+    "origem": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css",
+    "sha256": "3c8f27e6009ccfd710a905e6dcf12d0ee3c6f2ac7da05b0572d3e0d12e736fc8",
+    "bytes": 232803
+  },
+  {
+    "arquivo": "bootstrap/5.3.3/css/bootstrap.min.css.map",
+    "origem": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css.map",
+    "sha256": "f12338536350a422c64d02d6e43ff1dea493c3156ad823fe19761cdd5d56c05b",
+    "bytes": 589892
+  },
+  {
+    "arquivo": "bootstrap/5.3.3/js/bootstrap.bundle.min.js",
+    "origem": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js",
+    "sha256": "0833b2e9c3a26c258476c46266e6877fc75218625162e0460be9a3a098a61c6c",
+    "bytes": 80721
+  },
+  {
+    "arquivo": "bootstrap/5.3.3/js/bootstrap.bundle.min.js.map",
+    "origem": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js.map",
+    "sha256": "5e3e0763164143baaa1ca0706b6100ba0452f911d6ce9713b48e3dbe07b35125",
+    "bytes": 332090
+  },
+  {
+    "arquivo": "bootstrap/5.3.3/LICENSE",
+    "origem": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/LICENSE",
+    "sha256": "8c14611ae41ac6fd543c13349f22188eb12c69b3e59105c5eca3925a8e4eca3e",
+    "bytes": 1093
+  },
+  {
+    "arquivo": "bootstrap-icons/1.11.3/font/bootstrap-icons.min.css",
+    "origem": "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css",
+    "sha256": "f643d6fe7e679f9de3e16311600c5ef5cd6b098f7a3a8828fcc29255d2b33e62",
+    "bytes": 85875
+  },
+  {
+    "arquivo": "bootstrap-icons/1.11.3/font/fonts/bootstrap-icons.woff2",
+    "origem": "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/fonts/bootstrap-icons.woff2",
+    "sha256": "476adf42b40325098fcfa8b36ab3e769186bb4f6ce6a249753e2e1a9c22bf99e",
+    "bytes": 130396
+  },
+  {
+    "arquivo": "bootstrap-icons/1.11.3/font/fonts/bootstrap-icons.woff",
+    "origem": "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/fonts/bootstrap-icons.woff",
+    "sha256": "bb1de989b83970f6f4e54de1cd974c5cba55b73582da5e1b225a6d0edf029483",
+    "bytes": 176032
+  },
+  {
+    "arquivo": "bootstrap-icons/1.11.3/LICENSE",
+    "origem": "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/LICENSE",
+    "sha256": "0fb3e11bd57e896c5a512afd64864d28a37de45d19835016c87ca1ad19ead969",
+    "bytes": 1093
+  },
+  {
+    "arquivo": "jquery/3.7.1/js/jquery-3.7.1.min.js",
+    "origem": "https://code.jquery.com/jquery-3.7.1.min.js",
+    "sha256": "fc9a93dd241f6b045cbff0481cf4e1901becd0e12fb45166a8f17f95823f0b1a",
+    "bytes": 87533
+  },
+  {
+    "arquivo": "jquery/3.7.1/LICENSE.txt",
+    "origem": "https://cdn.jsdelivr.net/npm/jquery@3.7.1/LICENSE.txt",
+    "sha256": "d4db9ebe6f29f5168eac45ad713f055623ac5d0dcd5ba92da23d650ae012020d",
+    "bytes": 1097
+  },
+  {
+    "arquivo": "datatables/2.0.8/css/dataTables.bootstrap5.min.css",
+    "origem": "https://cdn.jsdelivr.net/npm/datatables.net-bs5@2.0.8/css/dataTables.bootstrap5.min.css",
+    "sha256": "6363a026f69dacaf852688d0d3654209186b669f49da69f78673057ca0025e35",
+    "bytes": 14423
+  },
+  {
+    "arquivo": "datatables/2.0.8/js/dataTables.min.js",
+    "origem": "https://cdn.jsdelivr.net/npm/datatables.net@2.0.8/js/dataTables.min.js",
+    "sha256": "b86f9716ef5c38bc5f744d56c13081774042d288703c1ad9cce93beaa7d1a1b3",
+    "bytes": 90394
+  },
+  {
+    "arquivo": "datatables/2.0.8/js/dataTables.bootstrap5.min.js",
+    "origem": "https://cdn.jsdelivr.net/npm/datatables.net-bs5@2.0.8/js/dataTables.bootstrap5.min.js",
+    "sha256": "7782a1ba98f775819bb889cd5dda07318fce6b69730bb268bcb3159ecb8e8da0",
+    "bytes": 1589
+  },
+  {
+    "arquivo": "datatables/2.0.8/i18n/pt-BR.json",
+    "origem": "https://cdn.jsdelivr.net/npm/datatables.net-plugins@2.0.8/i18n/pt-BR.json",
+    "sha256": "bfa75f30789aa30dccd26e4395f5f0ed32a0b9ffb18613d18f7b6a21b18c5d06",
+    "bytes": 8278
+  },
+  {
+    "arquivo": "datatables/2.0.8/LICENSE-core.txt",
+    "origem": "https://cdn.jsdelivr.net/npm/datatables.net@2.0.8/License.txt",
+    "sha256": "62b5fdd54371b4f6bd07a60dbc78b38814f49a8028213f540dc2733cad605382",
+    "bytes": 1120
+  },
+  {
+    "arquivo": "datatables/2.0.8/LICENSE-bootstrap5.txt",
+    "origem": "https://cdn.jsdelivr.net/npm/datatables.net-bs5@2.0.8/License.txt",
+    "sha256": "62b5fdd54371b4f6bd07a60dbc78b38814f49a8028213f540dc2733cad605382",
+    "bytes": 1120
+  },
+  {
+    "arquivo": "datatables/2.0.8/LICENSE-plugins.txt",
+    "origem": "https://cdn.jsdelivr.net/npm/datatables.net-plugins@2.0.8/License.txt",
+    "sha256": "46daf76193ec5496a09285dfc4c58127f68d895c4de20ded97aff6d58b452a35",
+    "bytes": 1088
+  }
+]
