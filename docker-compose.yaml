@@ -32,3 +32,9 @@ services:
       RESEND_FROM: ${RESEND_FROM}
       RESEND_TO: ${RESEND_TO}
     tty: true
+    networks:
+      - cmscondominio
+
+networks:
+  cmscondominio:
+    driver: bridge
