@@ -9,7 +9,7 @@ Os formulários enviam mensagens pelo Resend; esses fluxos não gravam fornecedo
 - Lucee 6, pela imagem `ortussolutions/commandbox:lucee6-3.16.0`.
 - ColdBox `8.2.0+35` e WireBox; dependências em `src/box.json`.
 - PostgreSQL, com SQL nos repositories e datasource `cmscondominio`.
-- Paginação com `cbpaginator`. Quick está declarado, mas não é o padrão de persistência dos repositories atuais.
+- Paginação com `cbpaginator` e entidades Quick 12 em `src/models/entities/`. Os repositories atuais continuam usando SQL diretamente.
 - Templates CFML, Bootstrap `5.3.3`, Bootstrap Icons `1.11.3`, jQuery `3.7.1` e DataTables `2.0.8`.
 - TestBox para testes. Não há pipeline npm configurado.
 
@@ -88,16 +88,61 @@ O build local usa o contexto `./build`, que não contém `src/box.json`. Portant
 | GET | `/` | Listagem de fornecedores com filtros |
 | GET | `/fornecedores/adicionar` | Formulário de indicação |
 | GET | `/fornecedores/:cdFornecedor` | Detalhes, comentários, média e formulário de testemunho |
+| GET | `/categorias` | Gerenciamento de categorias ativas e inativas |
+| GET / POST | `/categorias/:cdCategoria/editar` | Formulário e gravação do nome da categoria |
+| GET / POST | `/categorias/:cdCategoria/inativar` | Confirmação e inativação da categoria |
 | GET | `/api/fornecedores` | Dados da listagem |
 | POST | `/api/fornecedores/indicacao` | Envio de indicação por e-mail |
 | POST | `/api/fornecedores/:cdFornecedor/testemunho` | Envio de testemunho por e-mail |
 | GET | `/healthcheck` | Verificação de conexão com o banco |
 
-Os POSTs recebem JSON convertido em `IndicacaoDTO` e `TestemunhoDTO`; o identificador do fornecedor no testemunho vem da rota. Consulte os DTOs e os formulários em `src/views/fornecedores/` para os campos utilizados. O sucesso do envio retorna um booleano; falhas na integração geram exceção.
+Os POSTs de indicação e testemunho recebem JSON convertido em `IndicacaoDTO` e `TestemunhoDTO`; o identificador do fornecedor no testemunho vem da rota. Consulte os DTOs e os formulários em `src/views/fornecedores/` para os campos utilizados. O sucesso do envio retorna um booleano; falhas na integração geram exceção.
+
+O menu **Categorias de fornecedores** dá acesso ao gerenciamento, disponível a todos que acessam o CMS. A lista permite pesquisar, ordenar, paginar e filtrar a situação. A edição aceita nomes de 1 a 100 caracteres, removendo espaços nas extremidades, e mantém a situação atual. A inativação define `in_ativo = false`, preserva os vínculos existentes e retira a categoria das opções dos filtros e formulários. Categorias inativas continuam visíveis nos fornecedores já vinculados. Ambas as operações atualizam `ts_atualizado` via Quick, sem alterar `ts_criadoem`.
+
+Os formulários de categorias enviam POST com token CSRF vinculado à sessão. GET não grava dados. Entradas inválidas retornam 422, categoria inexistente retorna 404 e token inválido retorna 403. Após sucesso, há redirecionamento para a lista e mensagem de confirmação. Não há criação, exclusão ou reativação nesta funcionalidade.
 
 A listagem recebe `filtroNome`, `filtroCategoria`, `start`, `length`, `order[0][column]` e `order[0][dir]`, retornando `data`, `recordsTotal` e `recordsFiltered`. A paginação atual reduz os resultados em memória com `cbpaginator`. Hoje os dois totais usam a contagem filtrada e não há `draw` na resposta. A coluna de categorias também diverge do DTO de ordenação, que a mapeia para empresa; esses pontos exigem revisão conjunta da interface e do backend quando o contrato for alterado.
 
 `/api/echo` e algumas ações em `Main.cfc` são exemplos herdados do template.
+
+## Models Quick ORM
+
+As entidades em `src/models/entities/` refletem as quatro tabelas consultadas no banco configurado pelo `.env`. Todas usam o datasource `cmscondominio`, tabelas qualificadas com o schema e `PostgresGrammar@qb`. Obtenha instâncias pelo WireBox; elas mantêm estado por instância e não são singletons.
+
+| Model | Tabela | Chave | Relacionamentos |
+| --- | --- | --- | --- |
+| `Fornecedor` | `cmscondominio.tb_fornecedores` | `cdFornecedor` | `categorias()`, `comentarios()` |
+| `Categoria` | `cmscondominio.tb_categoria` | `cdCategoria` | `fornecedores()` |
+| `Comentario` | `cmscondominio.tb_comentarios` | `cdComentario` | `fornecedor()` |
+| `FornecedorCategoria` | `cmscondominio.tb_fornecedor_categoria` | `[cdFornecedor, cdCategoria]` | `fornecedor()`, `categoria()` |
+
+As propriedades usam camelCase e mapeiam explicitamente as colunas originais, incluindo `nrTelefone` como `bigint` e as diferentes grafias dos timestamps. Os IDs das três tabelas principais são `GENERATED ALWAYS AS IDENTITY`: não são enviados em inserts/updates e usam `ReturningKeyType@quick`. A associação usa `NullKeyType@quick` e exige os dois IDs existentes.
+
+Exemplos em um handler ou service com acesso ao WireBox:
+
+```cfml
+// Consulta limitada com categorias e comentários carregados antecipadamente.
+fornecedores = getInstance( "Fornecedor" )
+	.with( [ "categorias", "comentarios" ] )
+	.orderBy( "nmFornecedor" )
+	.limit( 10 )
+	.get();
+
+categorias = getInstance( "Categoria" )
+	.where( "inAtivo", true )
+	.orderBy( "txCategoria" )
+	.get();
+
+// Em um fluxo que já recebeu os dois identificadores:
+vinculo = getInstance( "FornecedorCategoria" ).find( [ cdFornecedor, cdCategoria ] );
+```
+
+Os campos de data conservam o comportamento do schema: `CURRENT_TIMESTAMP` como default no insert, sem atualização automática de `tsAtualizado`/`tsAtualizadoEm`. Não foram adicionados eventos de timestamp nem migrations. Os fluxos de indicação e testemunho continuam enviando e-mail pelos services existentes.
+
+`BaseEntidade` estende a entidade do Quick e informa a tipagem das duas chaves qualificadas da tabela de associação. Isso evita que o carregamento antecipado do Quick 12 envie IDs como `varchar` para comparação com colunas `integer` no PostgreSQL, sem modificar a dependência instalada.
+
+Referências: [definição de entidades no Quick 12](https://quick.ortusbooks.com/12.0.0/guide/getting-started/defining-an-entity), [relacionamentos](https://quick.ortusbooks.com/12.0.0/guide/relationships) e [componentes no Lucee](https://docs.lucee.org/reference/tags/component.html).
 
 ## Verificação e testes
 
@@ -111,7 +156,7 @@ Confira se o corpo é `true`. O endpoint executa `SELECT 1` e pode retornar `fal
 
 A suíte TestBox está em `src/tests/specs/`, mas requer preparação antes de ser usada como validação:
 
-- `src/tests/Application.cfc` aponta os mappings para `lib/coldbox` e `lib/testbox`, enquanto `src/box.json` instala em `coldbox/` e `testbox/`.
+- `src/tests/Application.cfc` usa os mappings `coldbox/` e `testbox/`, conforme `src/box.json`, e o datasource `cmscondominio`.
 - O ambiente dos testes precisa de configuração ou mocks para banco e bootstrap.
 - `MainSpec.cfc` ainda espera `welcomemessage = "Welcome to ColdBox!"`, ausente no handler atual, e contém outros casos do template.
 - Testes de indicação e testemunho devem simular o Resend para evitar envio real de mensagens.
@@ -121,6 +166,22 @@ Depois de resolver os pré-requisitos do ambiente de testes:
 ```sh
 curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json'
 ```
+
+Para executar somente a integração das entidades Quick:
+
+```sh
+curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.specs.integration.QuickEntitiesSpec'
+```
+
+Essa spec executa consultas de leitura, sem inserts, updates, deletes ou envio de e-mail. Verifica colunas, resultado vazio, busca por chave composta e relacionamentos simples e antecipados. As verificações sobre registros existentes dependem de haver dados nas tabelas; a spec não cria fixtures. A persistência não é exercitada contra esse banco.
+
+Para testar o gerenciamento de categorias:
+
+```sh
+curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.specs.integration.CategoriasSpec'
+```
+
+Essa spec valida entradas, categorias inexistentes, formulários, CSRF, métodos HTTP e persistência. Os casos de gravação criam categorias e fornecedor temporários em transações com rollback, sem modificar registros existentes nem enviar e-mails. As sequences de identidade podem avançar mesmo com rollback; use um banco de testes para execução recorrente.
 
 Inspecione o relatório: sucesso HTTP não substitui a conferência dos resultados dos testes. Para mudanças visuais, confira a listagem, os filtros, os formulários e o console do navegador em desktop e mobile.
 

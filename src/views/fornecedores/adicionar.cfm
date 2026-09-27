@@ -52,7 +52,7 @@
                                 <label for="categoriasFornecedor" class="form-label fw-medium">Categoria(s) * <small class="text-muted">(pressione Ctrl/Cmd para selecionar mais de uma)</small></label>
                                 <select class="form-select" id="categoriasFornecedor" multiple aria-label="Selecione as categorias" required style="height: 120px;">
                                     <cfloop array="#prc.categorias#" index="categoria">
-                                        <option value="#categoria.cdCategoria#">#categoria.txCategoria#</option>
+                                        <option value="#categoria.cdCategoria#">#encodeForHTML( categoria.txCategoria )#</option>
                                     </cfloop>
                                 </select>
                                 <div class="invalid-feedback">Selecione pelo menos uma categoria.</div>

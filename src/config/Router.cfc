@@ -30,6 +30,11 @@ component {
 		} );
 
 		// @app_routes@
+		route( "/categorias/:cdCategoria/editar" ).withHandler( "Categorias" ).toAction( { GET : "editar", POST : "salvar" } );
+		route( "/categorias/:cdCategoria/inativar" ).withHandler( "Categorias" ).toAction( { GET : "confirmarInativacao", POST : "inativar" } );
+
+		get( "/categorias", "Categorias.index" );
+
 		post( "/api/fornecedores/indicacao", "api.Fornecedores.indicacao" );
 		post( "/api/fornecedores/:cdFornecedor/testemunho", "api.Fornecedores.postTestemunho" );
 		get( "/api/fornecedores", "api.Fornecedores.getFornecedores" );

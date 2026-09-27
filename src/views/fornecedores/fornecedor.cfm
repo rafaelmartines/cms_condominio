@@ -39,7 +39,7 @@
                             <div>
                                 <cfset tags = listToArray( prc.fornecedor.categorias, "," )>
                                 <cfloop array="#tags#" index="tag">
-                                    <span class="badge bg-primary-subtle text-primary mb-2">#tag#</span>
+                                    <span class="badge bg-primary-subtle text-primary mb-2">#encodeForHTML( tag )#</span>
                                 </cfloop>
                                 <h3 class="fw-bold mb-1">#prc.fornecedor.nmFornecedor#</h3>
                             </div>
