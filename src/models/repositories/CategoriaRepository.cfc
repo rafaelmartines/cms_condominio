@@ -10,6 +10,16 @@ component singleton extends="BaseRepository" {
 		return variables.categoriaProvider.$get().find( arguments.cdCategoria );
 	}
 
+	public void function criar( required string txCategoria ) {
+		var instante = now();
+		variables.categoriaProvider.$get().create( {
+			txCategoria : arguments.txCategoria,
+			inAtivo : true,
+			tsCriadoEm : instante,
+			tsAtualizado : instante
+		} );
+	}
+
 	public boolean function editar( required numeric cdCategoria, required string txCategoria ) {
 		var resultado = variables.categoriaProvider.$get().where( "cdCategoria", arguments.cdCategoria ).updateAll( {
 			txCategoria : arguments.txCategoria,

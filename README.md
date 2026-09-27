@@ -81,6 +81,14 @@ podman compose down
 
 O build local usa o contexto `./build`, que não contém `src/box.json`. Portanto, o `box install` do Dockerfile local não comprova a instalação das dependências da aplicação. Confira `src/coldbox/`, `src/testbox/` e `src/modules/`; se o container não permanecer ativo para a instalação, use CommandBox no host e tente iniciar novamente.
 
+Ao alterar `src/config/Router.cfc` ou outras configurações do ColdBox, reinicialize a aplicação local para carregar as mudanças, conforme a [documentação do ColdBox](https://coldbox.ortusbooks.com/getting-started/configuration):
+
+```sh
+curl -fsS 'http://localhost:10000/?fwreinit=1' -o /dev/null
+```
+
+Depois, confira a URL alterada sem `fwreinit`. Os testes de integração inicializam sua própria aplicação e não atualizam as rotas da aplicação usada pelo navegador.
+
 ## Páginas e endpoints
 
 | Método | Caminho | Função |
@@ -89,6 +97,7 @@ O build local usa o contexto `./build`, que não contém `src/box.json`. Portant
 | GET | `/fornecedores/adicionar` | Formulário de indicação |
 | GET | `/fornecedores/:cdFornecedor` | Detalhes, comentários, média e formulário de testemunho |
 | GET | `/categorias` | Gerenciamento de categorias ativas e inativas |
+| GET / POST | `/categorias/adicionar` | Formulário e criação de categoria ativa |
 | GET / POST | `/categorias/:cdCategoria/editar` | Formulário e gravação do nome da categoria |
 | GET / POST | `/categorias/:cdCategoria/inativar` | Confirmação e inativação da categoria |
 | GET | `/api/fornecedores` | Dados da listagem |

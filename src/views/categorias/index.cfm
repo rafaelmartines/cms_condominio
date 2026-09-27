@@ -1,13 +1,14 @@
 <cfoutput>
 	<div class="card shadow-sm border-0">
-		<div class="card-header py-3 bg-body-secondary">
+		<div class="card-header py-3 bg-body-secondary d-flex flex-wrap align-items-center justify-content-between gap-3">
 			<h1 class="h5 mb-0"><i class="bi bi-tags me-2 text-primary" aria-hidden="true"></i>Categorias de fornecedores</h1>
+			<a href="/categorias/adicionar" class="btn btn-primary"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nova categoria</a>
 		</div>
 		<div class="card-body">
 			<cfif len( prc.mensagem )>
 				<div class="alert alert-success" role="status">#encodeForHTML( prc.mensagem )#</div>
 			</cfif>
-			<p class="text-body-secondary">Edite os nomes ou inative categorias que não devem mais aparecer nas opções dos formulários e filtros.</p>
+			<p class="text-body-secondary">Crie categorias, edite os nomes ou inative categorias que não devem mais aparecer nas opções dos formulários e filtros.</p>
 			<cfif arrayIsEmpty( prc.categorias )>
 				<div class="alert alert-info mb-0" role="status">Nenhuma categoria cadastrada.</div>
 			<cfelse>

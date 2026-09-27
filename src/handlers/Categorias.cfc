@@ -3,80 +3,79 @@ component extends="coldbox.system.EventHandler" {
 	property name="categoriaService" inject="CategoriaService";
 
 	this.allowedMethods = {
-		index : "GET", editar : "GET", confirmarInativacao : "GET", salvar : "POST", inativar : "POST"
+		index : "GET", adicionar : "GET", criar : "POST", editar : "GET", confirmarInativacao : "GET", salvar : "POST", inativar : "POST"
 	};
 
 	public void function index( event, rc, prc ) {
 		prc.titulo = "Categorias de fornecedores";
-		try {
-			prc.categorias = variables.categoriaService.listarParaGestao();
-			prc.mensagem = flash.get( "categoriasMensagem", "" );
-			event.setView( "categorias/index" );
-		} catch ( any erro ) {
-			exibirErro( event, prc, erro );
-		}
+		prc.categorias = variables.categoriaService.listarParaGestao();
+		prc.mensagem = flash.get( "categoriasMensagem", "" );
+		event.setView( "categorias/index" );
+	}
+
+	public void function adicionar( event, rc, prc ) {
+		prc.categoria = { txCategoria : "" };
+		prepararFormulario( event, prc, true );
+	}
+
+	public void function criar( event, rc, prc ) {
+		if ( !validarToken( event, rc, prc ) ) return;
+		prc.categoria = { txCategoria : "" };
+		variables.categoriaService.criarCategoria( rc.txCategoria ?: "" );
+		flash.put( "categoriasMensagem", "Categoria criada com sucesso." );
+		relocate( uri = "/categorias", statusCode = 303 );
 	}
 
 	public void function editar( event, rc, prc ) {
-		try {
-			prc.categoria = variables.categoriaService.obterCategoria( rc.cdCategoria ?: "" );
-			prepararFormulario( event, prc );
-		} catch ( any erro ) {
-			exibirErro( event, prc, erro );
-		}
+		prc.categoria = variables.categoriaService.obterCategoria( rc.cdCategoria ?: "" );
+		prepararFormulario( event, prc );
 	}
 
 	public void function confirmarInativacao( event, rc, prc ) {
-		try {
-			prc.categoria = variables.categoriaService.obterCategoria( rc.cdCategoria ?: "" );
-			prc.titulo = "Inativar categoria";
-			prc.csrfToken = csrfGenerateToken( "categorias" );
-			event.setView( "categorias/inativar" );
-		} catch ( any erro ) {
-			exibirErro( event, prc, erro );
-		}
+		prc.categoria = variables.categoriaService.obterCategoria( rc.cdCategoria ?: "" );
+		prc.titulo = "Inativar categoria";
+		prc.csrfToken = csrfGenerateToken( "categorias" );
+		event.setView( "categorias/inativar" );
 	}
 
 	public void function salvar( event, rc, prc ) {
 		if ( !validarToken( event, rc, prc ) ) return;
-		try {
-			prc.categoria = variables.categoriaService.obterCategoria( rc.cdCategoria ?: "" );
-			variables.categoriaService.editarCategoria( rc.cdCategoria, rc.txCategoria ?: "" );
-		} catch ( CategoriaInvalida erro ) {
-			if ( !structKeyExists( prc, "categoria" ) ) {
-				exibirErro( event, prc, erro );
-				return;
-			}
-			prc.categoria.txCategoria = isSimpleValue( rc.txCategoria ?: "" ) ? ( rc.txCategoria ?: "" ) : "";
-			prc.erroNome = erro.message;
-			event.setHTTPHeader( statusCode = 422 );
-			prepararFormulario( event, prc );
-			return;
-		} catch ( any erro ) {
-			exibirErro( event, prc, erro );
-			return;
-		}
+		prc.categoria = variables.categoriaService.obterCategoria( rc.cdCategoria ?: "" );
+		variables.categoriaService.editarCategoria( rc.cdCategoria, rc.txCategoria ?: "" );
 		flash.put( "categoriasMensagem", "Categoria atualizada com sucesso." );
 		relocate( uri = "/categorias", statusCode = 303 );
 	}
 
 	public void function inativar( event, rc, prc ) {
 		if ( !validarToken( event, rc, prc ) ) return;
-		try {
-			variables.categoriaService.inativarCategoria( rc.cdCategoria ?: "" );
-		} catch ( any erro ) {
-			exibirErro( event, prc, erro );
-			return;
-		}
+		variables.categoriaService.inativarCategoria( rc.cdCategoria ?: "" );
 		flash.put( "categoriasMensagem", "Categoria inativada com sucesso." );
 		relocate( uri = "/categorias", statusCode = 303 );
 	}
 
-	private void function prepararFormulario( required any event, required struct prc ) {
-		arguments.prc.titulo = "Editar categoria";
+	public void function onError( event, rc, prc, faultAction, exception, eventArguments ) {
+		if ( arguments.exception.type == "InvalidHTTPMethod" ) {
+			throw( object = arguments.exception );
+		}
+		if (
+			( arguments.faultAction == "salvar" || arguments.faultAction == "criar" ) &&
+			arguments.exception.type == "CategoriaInvalida" &&
+			structKeyExists( arguments.prc, "categoria" )
+		) {
+			arguments.prc.categoria.txCategoria = isSimpleValue( arguments.rc.txCategoria ?: "" ) ? ( arguments.rc.txCategoria ?: "" ) : "";
+			arguments.prc.erroNome = arguments.exception.message;
+			arguments.event.setHTTPHeader( statusCode = 422 );
+			prepararFormulario( arguments.event, arguments.prc, arguments.faultAction == "criar" );
+			return;
+		}
+		exibirErro( arguments.event, arguments.prc, arguments.exception );
+	}
+
+	private void function prepararFormulario( required any event, required struct prc, boolean nova = false ) {
+		arguments.prc.titulo = arguments.nova ? "Nova categoria" : "Editar categoria";
 		arguments.prc.csrfToken = csrfGenerateToken( "categorias" );
 		param arguments.prc.erroNome = "";
-		arguments.event.setView( "categorias/editar" );
+		arguments.event.setView( arguments.nova ? "categorias/adicionar" : "categorias/editar" );
 	}
 
 	private boolean function validarToken( required any event, required struct rc, required struct prc ) {

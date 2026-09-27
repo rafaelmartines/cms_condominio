@@ -19,9 +19,7 @@ component singleton {
 
 	public void function editarCategoria( required any cdCategoria, required any txCategoria ) {
 		validarId( arguments.cdCategoria );
-		if ( !isSimpleValue( arguments.txCategoria ) || !len( trim( arguments.txCategoria ) ) || len( trim( arguments.txCategoria ) ) > 100 ) {
-			throw( type = "CategoriaInvalida", message = "Informe um nome de categoria com 1 a 100 caracteres." );
-		}
+		validarNome( arguments.txCategoria );
 		if ( !variables.categoriaRepository.editar( arguments.cdCategoria, trim( arguments.txCategoria ) ) ) {
 			throw( type = "CategoriaNaoEncontrada", message = "Categoria não encontrada." );
 		}
@@ -31,6 +29,17 @@ component singleton {
 		validarId( arguments.cdCategoria );
 		if ( !variables.categoriaRepository.inativar( arguments.cdCategoria ) ) {
 			throw( type = "CategoriaNaoEncontrada", message = "Categoria não encontrada." );
+		}
+	}
+
+	public void function criarCategoria( required any txCategoria ) {
+		validarNome( arguments.txCategoria );
+		variables.categoriaRepository.criar( trim( arguments.txCategoria ) );
+	}
+
+	private void function validarNome( required any txCategoria ) {
+		if ( !isSimpleValue( arguments.txCategoria ) || !len( trim( arguments.txCategoria ) ) || len( trim( arguments.txCategoria ) ) > 100 ) {
+			throw( type = "CategoriaInvalida", message = "Informe um nome de categoria com 1 a 100 caracteres." );
 		}
 	}
 

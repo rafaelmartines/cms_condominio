@@ -13,6 +13,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				}
 				for ( var nome in [ "", "   ", repeatString( "a", 101 ), [] ] ) {
 					expect( function() { service.editarCategoria( 1, nome ); } ).toThrow( "CategoriaInvalida" );
+					expect( function() { service.criarCategoria( nome ); } ).toThrow( "CategoriaInvalida" );
 				}
 			} );
 
@@ -83,6 +84,8 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						setup();
 						event = post( route = "/categorias/#id#/editar", params = { csrfToken : token, txCategoria : "   " } );
 						expect( event.getPrivateValue( "erroNome" ) ).toInclude( "1 a 100" );
+						expect( event.getStatusCode() ).toBe( 422 );
+						expect( event.getPrivateValue( "categoria" ).txCategoria ).toBe( "   " );
 						expect( event.getCurrentView() ).toBe( "categorias/editar" );
 						setup();
 						post( route = "/categorias/#id#/editar", params = { csrfToken : token, txCategoria : "Nome editado" }, renderResults = false );
@@ -101,6 +104,62 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						transaction action="rollback";
 					}
 				}
+			} );
+
+			it( "trata falhas inesperadas pelo onError sem expor detalhes", function() {
+				var service = prepareMock( getWireBox().getInstance( "CategoriaService" ) );
+				var listarOriginal = service.listarParaGestao;
+				service.$( "listarParaGestao" ).$throws( type = "Database", message = "Detalhe interno de teste" );
+				try {
+					var event = get( route = "/categorias" );
+					expect( event.getStatusCode() ).toBe( 500 );
+					expect( event.getCurrentView() ).toBe( "categorias/erro" );
+					expect( event.getRenderedContent() ).notToInclude( "Detalhe interno de teste" );
+				} finally {
+					service.listarParaGestao = listarOriginal;
+					service.$property( "listarParaGestao", "variables", listarOriginal );
+				}
+			} );
+
+			it( "cria categoria ativa pelo formulário e preserva erros de validação", function() {
+				transaction {
+					try {
+						var event = get( route = "/categorias/adicionar" );
+						expect( event.getCurrentView() ).toBe( "categorias/adicionar" );
+						expect( event.getRenderedContent() ).toInclude( "Criar categoria" );
+						var token = event.getPrivateValue( "csrfToken" );
+						var invalido = '<script>alert("teste")</script>' & repeatString( "a", 101 );
+						setup();
+						event = post( route = "/categorias/adicionar", params = { csrfToken : token, txCategoria : invalido } );
+						expect( event.getStatusCode() ).toBe( 422 );
+						expect( event.getCurrentView() ).toBe( "categorias/adicionar" );
+						expect( event.getPrivateValue( "categoria" ).txCategoria ).toBe( invalido );
+						expect( event.getRenderedContent() ).notToInclude( '<script>alert("teste")</script>' );
+						setup();
+						var nome = "Categoria teste " & createUUID();
+						post( route = "/categorias/adicionar", params = { csrfToken : token, txCategoria : "  " & nome & "  " }, renderResults = false );
+						var criada = queryExecute(
+							"SELECT * FROM cmscondominio.tb_categoria WHERE tx_categoria = :nome",
+							{ nome : { value : nome, cfsqltype : "cf_sql_varchar" } }
+						);
+						expect( criada.recordCount ).toBe( 1 );
+						expect( criada.in_ativo[ 1 ] ).toBeTrue();
+						expect( isDate( criada.ts_criadoem[ 1 ] ) ).toBeTrue();
+						setup();
+						event = get( route = "/categorias" );
+						expect( event.getRenderedContent() ).toInclude( nome );
+						expect( event.getRenderedContent() ).toInclude( 'href="/categorias/adicionar"' );
+					} finally {
+						transaction action="rollback";
+					}
+				}
+			} );
+
+			it( "bloqueia criação sem CSRF e gravação por GET", function() {
+				var event = post( route = "/categorias/adicionar", params = { txCategoria : "Não gravar" } );
+				expect( event.getStatusCode() ).toBe( 403 );
+				setup();
+				expect( function() { execute( event = "Categorias.criar" ); } ).toThrow( "InvalidHTTPMethod" );
 			} );
 
 			it( "bloqueia GET direto nas ações de gravação", function() {
