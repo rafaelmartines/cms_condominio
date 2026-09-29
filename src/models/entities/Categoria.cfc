@@ -13,10 +13,7 @@ component
 	property name="tsAtualizado" column="ts_atualizado" sqltype="cf_sql_timestamp";
 
 	variables._key = "cdCategoria";
-
-	public any function keyType() {
-		return variables._wirebox.getInstance( "ReturningKeyType@quick" );
-	}
+	// Usa AutoIncrementingKeyType do Quick: no Lucee, o ID vem nos metadados do INSERT.
 
 	public any function fornecedores() {
 		return belongsToMany(

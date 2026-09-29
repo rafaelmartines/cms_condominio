@@ -81,7 +81,9 @@ Limitações conhecidas do setup:
 - Siga `src/.editorconfig`: UTF-8, LF, tabs com largura 4; `.yml` usa dois espaços. Preserve o estilo local dos arquivos e consulte `src/.cfformat.json` e `src/.bxformat.json` conforme o formatador utilizado.
 - Preserve nomes de domínio em português e convenções existentes, como `cdFornecedor`, `nmFornecedor`, `txConteudo` e sufixos `Service`, `Repository` e `DTO`.
 - Mantenha handlers voltados ao HTTP, services à orquestração e repositories ao SQL. Use injeção WireBox e `populateModel()` conforme os exemplos existentes.
-- Em componentes `singleton`, mantenha dados por requisição em `local`/`var` e argumentos em `arguments`; não armazene estado de usuário em `variables`.
+- Em CFML, use operadores verbais: `AND`, `OR`, `NOT`, `EQ`, `NEQ`, `GT`, `GTE`, `LT` e `LTE`, em vez dos equivalentes simbólicos (`&&`, `||`, `!`, `==`, `!=`, `>`, `>=`, `<` e `<=`).
+- Declare variáveis de função com o escopo explícito `local` (por exemplo, `local.resultado = ...`), inclusive em laços, em vez de `var`. Prefira referências explícitas a `local` e `arguments`; em closures, preserve corretamente as referências capturadas do escopo externo.
+- Em componentes `singleton`, mantenha dados por requisição em `local` e argumentos em `arguments`; não armazene estado de usuário em `variables`.
 - Adicione rotas específicas em `src/config/Router.cfc` antes de `:handler/:action?`. Preserve métodos HTTP e contratos consumidos pelas views.
 - A listagem `/api/fornecedores` retorna `data`, `recordsTotal` e `recordsFiltered`. Confira conjuntamente handler, DTO, repository, service e DataTables ao alterar filtros, ordenação ou paginação.
 - Use parâmetros SQL com `cfsqltype` para valores. Identificadores e direção de ordenação exigem listas permitidas: o DTO já mapeia colunas, mas `orderDir` ainda chega interpolado ao SQL sem validação explícita. Não replique esse padrão inseguro.

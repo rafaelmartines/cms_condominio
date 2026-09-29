@@ -30,6 +30,9 @@ component {
 		} );
 
 		// @app_routes@
+		route( "/login" ).withHandler( "Autenticacao" ).toAction( { GET : "login", POST : "entrar" } );
+		route( "/cadastro" ).withHandler( "Autenticacao" ).toAction( { GET : "cadastro", POST : "criar" } );
+		post( "/logout", "Autenticacao.sair" );
 		route( "/categorias/adicionar" ).withHandler( "Categorias" ).toAction( { GET : "adicionar", POST : "criar" } );
 		route( "/categorias/:cdCategoria/editar" ).withHandler( "Categorias" ).toAction( { GET : "editar", POST : "salvar" } );
 		route( "/categorias/:cdCategoria/inativar" ).withHandler( "Categorias" ).toAction( { GET : "confirmarInativacao", POST : "inativar" } );

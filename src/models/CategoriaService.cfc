@@ -1,6 +1,7 @@
 component singleton {
 
 	property name="categoriaRepository" inject="repositories.CategoriaRepository";
+	property name="validationManager" inject="ValidationManager@cbvalidation";
 
 	public array function listarParaGestao() {
 		return variables.categoriaRepository.listarParaGestao().map( function( categoria ) {
@@ -9,25 +10,22 @@ component singleton {
 	}
 
 	public struct function obterCategoria( required any cdCategoria ) {
-		validarId( arguments.cdCategoria );
-		var categoria = variables.categoriaRepository.obterPorId( arguments.cdCategoria );
-		if ( isNull( categoria ) ) {
+		local.categoria = variables.categoriaRepository.obterPorId( arguments.cdCategoria );
+		if ( isNull( local.categoria ) ) {
 			throw( type = "CategoriaNaoEncontrada", message = "Categoria não encontrada." );
 		}
-		return paraDados( categoria );
+		return paraDados( local.categoria );
 	}
 
 	public void function editarCategoria( required any cdCategoria, required any txCategoria ) {
-		validarId( arguments.cdCategoria );
 		validarNome( arguments.txCategoria );
-		if ( !variables.categoriaRepository.editar( arguments.cdCategoria, trim( arguments.txCategoria ) ) ) {
+		if ( NOT variables.categoriaRepository.editar( arguments.cdCategoria, trim( arguments.txCategoria ) ) ) {
 			throw( type = "CategoriaNaoEncontrada", message = "Categoria não encontrada." );
 		}
 	}
 
 	public void function inativarCategoria( required any cdCategoria ) {
-		validarId( arguments.cdCategoria );
-		if ( !variables.categoriaRepository.inativar( arguments.cdCategoria ) ) {
+		if ( NOT variables.categoriaRepository.inativar( arguments.cdCategoria ) ) {
 			throw( type = "CategoriaNaoEncontrada", message = "Categoria não encontrada." );
 		}
 	}
@@ -38,14 +36,15 @@ component singleton {
 	}
 
 	private void function validarNome( required any txCategoria ) {
-		if ( !isSimpleValue( arguments.txCategoria ) || !len( trim( arguments.txCategoria ) ) || len( trim( arguments.txCategoria ) ) > 100 ) {
-			throw( type = "CategoriaInvalida", message = "Informe um nome de categoria com 1 a 100 caracteres." );
-		}
+		local.dto = new dto.CategoriaDTO();
+		local.dto.setTxCategoria( arguments.txCategoria );
+		validarDTO( local.dto, "criar" );
 	}
 
-	private void function validarId( required any cdCategoria ) {
-		if ( !isSimpleValue( arguments.cdCategoria ) || !reFind( "^[1-9][0-9]{0,9}$", arguments.cdCategoria ) || arguments.cdCategoria > 2147483647 ) {
-			throw( type = "CategoriaInvalida", message = "Identificador de categoria inválido." );
+	private void function validarDTO( required any dto, required string perfil ) {
+		local.resultado = variables.validationManager.validate( target = arguments.dto, profiles = arguments.perfil );
+		if ( local.resultado.hasErrors() ) {
+			throw( type = "CategoriaInvalida", message = local.resultado.getAllErrors()[ 1 ] );
 		}
 	}
 
@@ -53,7 +52,7 @@ component singleton {
 		return {
 			cdCategoria : arguments.categoria.getCdCategoria(),
 			txCategoria : arguments.categoria.getTxCategoria(),
-			inAtivo : !isNull( arguments.categoria.getInAtivo() ) && arguments.categoria.getInAtivo() == true
+			inAtivo : NOT isNull( arguments.categoria.getInAtivo() ) AND arguments.categoria.getInAtivo() EQ true
 		};
 	}
 

@@ -27,7 +27,9 @@
         "coldbox":"8.2.0+35",
         "quick":"^12.0.12",
         "cbpaginator":"^2.8.3",
-        "commandbox-bullet-train":"^1.4.2"
+        "commandbox-bullet-train":"^1.4.2",
+        "cbvalidation":"^4.9.1+32",
+        "cbsecurity":"^3.8.0+15"
     },
     "installPaths":{
         "coldbox":"coldbox/",
@@ -36,7 +38,9 @@
         "cbpaginator":"modules/cbpaginator/",
         "route-visualizer":"modules/route-visualizer/",
         "commandbox-bullet-train":"commandbox-cfformat/commandbox-bullet-train/",
-        "cbdebugger":"modules/cbdebugger/"
+        "cbdebugger":"modules/cbdebugger/",
+        "cbvalidation":"modules/cbvalidation/",
+        "cbsecurity":"modules/cbsecurity/"
     },
     "scripts":{
         "format":"!boxlang format --source config/,handlers/,interceptors/,models/,modules_app/,tests/specs/,*.cfc",

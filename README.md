@@ -47,7 +47,7 @@ Preencha as variáveis com a configuração do seu ambiente:
 
 As quatro variáveis `RESEND_*` ainda não estão em `.env.example`: adicione-as ao `.env` local. Elas são consumidas por `Main.onAppInit`. O Compose define `ENVIRONMENT=development`; fora dele, disponibilize também essa variável ao processo. Não versione credenciais nem compartilhe saídas que expandam o conteúdo do `.env`.
 
-O Compose não cria um banco. É necessário fornecer o schema `cmscondominio`, com `tb_fornecedores`, `tb_categoria`, `tb_fornecedor_categoria` e `tb_comentarios`, conforme as consultas em `src/models/repositories/`. A busca por nome depende de `cmscondominio.unaccent`. Não há migrations ou scripts SQL de criação versionados; obtenha a estrutura compatível antes de usar as páginas.
+O Compose não cria um banco. É necessário fornecer o schema `cmscondominio`, com `tb_fornecedores`, `tb_categoria`, `tb_fornecedor_categoria` e `tb_comentarios`, conforme as consultas em `src/models/repositories/`. A busca por nome depende de `cmscondominio.unaccent`. O script `database/001_usuarios.sql` cria somente a tabela de usuários; obtenha a estrutura das demais tabelas antes de usar as páginas.
 
 ## Executar localmente
 
@@ -107,13 +107,40 @@ Depois, confira a URL alterada sem `fwreinit`. Os testes de integração inicial
 
 Os POSTs de indicação e testemunho recebem JSON convertido em `IndicacaoDTO` e `TestemunhoDTO`; o identificador do fornecedor no testemunho vem da rota. Consulte os DTOs e os formulários em `src/views/fornecedores/` para os campos utilizados. O sucesso do envio retorna um booleano; falhas na integração geram exceção.
 
-O menu **Categorias de fornecedores** dá acesso ao gerenciamento, disponível a todos que acessam o CMS. A lista permite pesquisar, ordenar, paginar e filtrar a situação. A edição aceita nomes de 1 a 100 caracteres, removendo espaços nas extremidades, e mantém a situação atual. A inativação define `in_ativo = false`, preserva os vínculos existentes e retira a categoria das opções dos filtros e formulários. Categorias inativas continuam visíveis nos fornecedores já vinculados. Ambas as operações atualizam `ts_atualizado` via Quick, sem alterar `ts_criadoem`.
+O menu **Categorias de fornecedores** dá acesso ao gerenciamento, disponível apenas a usuários autenticados. A lista permite pesquisar, ordenar, paginar e filtrar a situação. A edição aceita nomes de 1 a 100 caracteres, removendo espaços nas extremidades, e mantém a situação atual. A inativação define `in_ativo = false`, preserva os vínculos existentes e retira a categoria das opções dos filtros e formulários. Categorias inativas continuam visíveis nos fornecedores já vinculados. Ambas as operações atualizam `ts_atualizado` via Quick, sem alterar `ts_criadoem`.
 
-Os formulários de categorias enviam POST com token CSRF vinculado à sessão. GET não grava dados. Entradas inválidas retornam 422, categoria inexistente retorna 404 e token inválido retorna 403. Após sucesso, há redirecionamento para a lista e mensagem de confirmação. Não há criação, exclusão ou reativação nesta funcionalidade.
+Os formulários de categorias enviam POST com token CSRF vinculado à sessão. GET não grava dados. Entradas inválidas retornam 422, categoria inexistente retorna 404 e token inválido retorna 403. Após sucesso, há redirecionamento para a lista e mensagem de confirmação. A criação gera uma categoria ativa; não há exclusão ou reativação nesta funcionalidade.
 
 A listagem recebe `filtroNome`, `filtroCategoria`, `start`, `length`, `order[0][column]` e `order[0][dir]`, retornando `data`, `recordsTotal` e `recordsFiltered`. A paginação atual reduz os resultados em memória com `cbpaginator`. Hoje os dois totais usam a contagem filtrada e não há `draw` na resposta. A coluna de categorias também diverge do DTO de ordenação, que a mapeia para empresa; esses pontos exigem revisão conjunta da interface e do backend quando o contrato for alterado.
 
 `/api/echo` e algumas ações em `Main.cfc` são exemplos herdados do template.
+
+## Login e cadastro de usuários
+
+O cbSecurity 3.8 usa o cbAuth com autenticação por sessão. O handler `Categorias` tem `secured="true"`; visitantes são redirecionados para `/login`, inclusive nas rotas de gravação. O cadastro (`GET/POST /cadastro`) também exige autenticação. Qualquer usuário autenticado pode gerenciar categorias e cadastrar outros usuários; não há perfis administrativos distintos. O menu apresenta **Entrar** para visitantes e **Cadastrar usuário** e **Sair** para usuários autenticados.
+
+O login usa e-mail e senha. As senhas têm de 12 a 128 caracteres e são armazenadas como PBKDF2-HMAC-SHA256 com salt aleatório e 600.000 iterações, nunca em texto puro. O login renova a sessão; `POST /logout` exige CSRF e invalida a sessão. Cadastro e login também verificam CSRF. O e-mail é normalizado para minúsculas e tem restrição única no banco. O DTO `UsuarioDTO` concentra as constraints e os perfis `cadastro` e `login`.
+
+Antes do primeiro uso, aplique o SQL no PostgreSQL do datasource. Configure `PGHOST`, `PGPORT`, `PGDATABASE` e `PGUSER`; forneça a senha pelo mecanismo seguro do `psql` (por exemplo, `.pgpass` com permissões restritas). Na raiz:
+
+```sh
+psql -X -v ON_ERROR_STOP=1 -f database/001_usuarios.sql
+python3 scripts/criar_usuario_inicial.py | psql -X -v ON_ERROR_STOP=1
+```
+
+O segundo comando solicita nome, e-mail e senha no terminal, gera o hash e insere a primeira conta somente se a tabela estiver vazia, sob bloqueio transacional. Requer Python 3 e `psql`; não grava arquivos com senhas. Depois, entre em `/login` e use `/cadastro` para novas contas. O cadastro não troca a sessão de quem cadastrou. A instalação e os testes não criam uma conta padrão. Em produção, sirva a aplicação por HTTPS.
+
+As configurações ficam em `src/config/modules/cbauth.cfc` e `cbsecurity.cfc`. `security.AnotacaoAuthValidator` adapta o valor booleano `secured=true` ao validador do cbSecurity 3.8, que o recebe como uma permissão textual; permissões explícitas continuam sendo delegadas ao validador original. Dependências instaladas não foram modificadas.
+
+Teste os fluxos com o banco preparado:
+
+```sh
+curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.specs.integration.AutenticacaoSpec,tests.specs.integration.CategoriasSpec'
+```
+
+Os usuários criados pelos testes são revertidos por transação. A suíte de categorias simula uma sessão autenticada; a suíte de autenticação exercita o firewall, cadastro, credenciais, sessão e logout reais.
+
+Referências: [autenticação no cbSecurity](https://coldbox-security.ortusbooks.com/getting-started/configuration/authentication), [GeneratePBKDFKey no Lucee](https://docs.lucee.org/reference/functions/generatepbkdfkey.html) e [armazenamento de senhas na OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
 
 ## Models Quick ORM
 

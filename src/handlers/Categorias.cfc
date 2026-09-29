@@ -1,4 +1,4 @@
-component extends="coldbox.system.EventHandler" {
+component extends="coldbox.system.EventHandler" secured="true" {
 
 	property name="categoriaService" inject="CategoriaService";
 
@@ -19,56 +19,76 @@ component extends="coldbox.system.EventHandler" {
 	}
 
 	public void function criar( event, rc, prc ) {
-		if ( !validarToken( event, rc, prc ) ) return;
+		if ( NOT validarToken( event, rc, prc ) ) return;
 		prc.categoria = { txCategoria : "" };
-		variables.categoriaService.criarCategoria( rc.txCategoria ?: "" );
+		local.formulario = popularValidarDTO( "criar" );
+		variables.categoriaService.criarCategoria( local.formulario.getTxCategoria() );
 		flash.put( "categoriasMensagem", "Categoria criada com sucesso." );
 		relocate( uri = "/categorias", statusCode = 303 );
 	}
 
 	public void function editar( event, rc, prc ) {
-		prc.categoria = variables.categoriaService.obterCategoria( rc.cdCategoria ?: "" );
+		local.identificador = populateModel( model = "CategoriaDTO", include = "cdCategoria" );
+		prc.categoria = variables.categoriaService.obterCategoria( local.identificador.getCdCategoria() );
 		prepararFormulario( event, prc );
 	}
 
 	public void function confirmarInativacao( event, rc, prc ) {
-		prc.categoria = variables.categoriaService.obterCategoria( rc.cdCategoria ?: "" );
+		local.identificador = populateModel( model = "CategoriaDTO", include = "cdCategoria" );
+		prc.categoria = variables.categoriaService.obterCategoria( local.identificador.getCdCategoria() );
 		prc.titulo = "Inativar categoria";
 		prc.csrfToken = csrfGenerateToken( "categorias" );
 		event.setView( "categorias/inativar" );
 	}
 
 	public void function salvar( event, rc, prc ) {
-		if ( !validarToken( event, rc, prc ) ) return;
-		prc.categoria = variables.categoriaService.obterCategoria( rc.cdCategoria ?: "" );
-		variables.categoriaService.editarCategoria( rc.cdCategoria, rc.txCategoria ?: "" );
+		if ( NOT validarToken( event, rc, prc ) ) return;
+		local.categoriaDTO = populateModel( model = "CategoriaDTO", include = "cdCategoria,txCategoria" );
+		prc.categoria = variables.categoriaService.obterCategoria( local.categoriaDTO.getCdCategoria() );
+		validarCategoriaDTO( local.categoriaDTO, "editar" );
+		variables.categoriaService.editarCategoria( local.categoriaDTO.getCdCategoria(), local.categoriaDTO.getTxCategoria() );
 		flash.put( "categoriasMensagem", "Categoria atualizada com sucesso." );
 		relocate( uri = "/categorias", statusCode = 303 );
 	}
 
 	public void function inativar( event, rc, prc ) {
-		if ( !validarToken( event, rc, prc ) ) return;
-		variables.categoriaService.inativarCategoria( rc.cdCategoria ?: "" );
+		if ( NOT validarToken( event, rc, prc ) ) return;
+		local.identificador = populateModel( model = "CategoriaDTO", include = "cdCategoria" );
+		variables.categoriaService.inativarCategoria( local.identificador.getCdCategoria() );
 		flash.put( "categoriasMensagem", "Categoria inativada com sucesso." );
 		relocate( uri = "/categorias", statusCode = 303 );
 	}
 
 	public void function onError( event, rc, prc, faultAction, exception, eventArguments ) {
-		if ( arguments.exception.type == "InvalidHTTPMethod" ) {
+		if ( arguments.exception.type EQ "InvalidHTTPMethod" ) {
 			throw( object = arguments.exception );
 		}
 		if (
-			( arguments.faultAction == "salvar" || arguments.faultAction == "criar" ) &&
-			arguments.exception.type == "CategoriaInvalida" &&
+			( arguments.faultAction EQ "salvar" OR arguments.faultAction EQ "criar" ) AND
+			arguments.exception.type EQ "CategoriaInvalida" AND
 			structKeyExists( arguments.prc, "categoria" )
 		) {
 			arguments.prc.categoria.txCategoria = isSimpleValue( arguments.rc.txCategoria ?: "" ) ? ( arguments.rc.txCategoria ?: "" ) : "";
 			arguments.prc.erroNome = arguments.exception.message;
 			arguments.event.setHTTPHeader( statusCode = 422 );
-			prepararFormulario( arguments.event, arguments.prc, arguments.faultAction == "criar" );
+			prepararFormulario( arguments.event, arguments.prc, arguments.faultAction EQ "criar" );
 			return;
 		}
 		exibirErro( arguments.event, arguments.prc, arguments.exception );
+	}
+
+	private any function popularValidarDTO( required string perfil ) {
+		local.dto = getInstance( "CategoriaDTO" );
+		populateModel( model = local.dto, include = local.dto.constraintProfiles[ arguments.perfil ] );
+		validarCategoriaDTO( local.dto, arguments.perfil );
+		return local.dto;
+	}
+
+	private void function validarCategoriaDTO( required any dto, required string perfil ) {
+		local.resultado = validate( target = arguments.dto, profiles = arguments.perfil );
+		if ( local.resultado.hasErrors() ) {
+			throw( type = "CategoriaInvalida", message = local.resultado.getAllErrors()[ 1 ] );
+		}
 	}
 
 	private void function prepararFormulario( required any event, required struct prc, boolean nova = false ) {
@@ -79,8 +99,8 @@ component extends="coldbox.system.EventHandler" {
 	}
 
 	private boolean function validarToken( required any event, required struct rc, required struct prc ) {
-		var token = arguments.rc.csrfToken ?: "";
-		if ( isSimpleValue( token ) && len( token ) && csrfVerifyToken( token, "categorias" ) ) return true;
+		local.token = arguments.rc.csrfToken ?: "";
+		if ( isSimpleValue( local.token ) AND len( local.token ) AND csrfVerifyToken( local.token, "categorias" ) ) return true;
 		arguments.event.setHTTPHeader( statusCode = 403 );
 		arguments.prc.titulo = "Não foi possível concluir";
 		arguments.prc.erro = "O formulário expirou ou é inválido. Volte à lista e tente novamente.";
@@ -89,19 +109,19 @@ component extends="coldbox.system.EventHandler" {
 	}
 
 	private void function exibirErro( required any event, required struct prc, required any erro ) {
-		var status = 500;
+		local.status = 500;
 		arguments.prc.titulo = "Não foi possível concluir";
 		arguments.prc.erro = "Não foi possível acessar as categorias. Tente novamente em instantes.";
-		if ( arguments.erro.type == "CategoriaNaoEncontrada" ) {
-			status = 404;
+		if ( arguments.erro.type EQ "CategoriaNaoEncontrada" ) {
+			local.status = 404;
 			arguments.prc.erro = arguments.erro.message;
-		} else if ( arguments.erro.type == "CategoriaInvalida" ) {
-			status = 422;
+		} else if ( arguments.erro.type EQ "CategoriaInvalida" ) {
+			local.status = 422;
 			arguments.prc.erro = arguments.erro.message;
 		} else {
 			log.error( "Falha no gerenciamento de categorias (#arguments.erro.type#)." );
 		}
-		arguments.event.setHTTPHeader( statusCode = status );
+		arguments.event.setHTTPHeader( statusCode = local.status );
 		arguments.event.setView( "categorias/erro" );
 	}
 

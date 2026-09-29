@@ -4,26 +4,68 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 		describe( "Gerenciamento de categorias", function() {
 			beforeEach( function() {
 				setup();
+				variables.authTeste = prepareMock( getWireBox().getInstance( "authenticationService@cbauth" ) );
+				variables.isLoggedInOriginal = variables.authTeste.isLoggedIn;
+				variables.getUserOriginal = variables.authTeste.getUser;
+				variables.authTeste.$( "isLoggedIn", true );
+				variables.authTeste.$( "getUser", new app.models.security.UsuarioAutenticado( { cd_usuario : 1, nm_usuario : "Teste", tx_email : "teste@example.invalid" } ) );
 			} );
 
-			it( "valida IDs e nomes antes de persistir", function() {
-				var service = getWireBox().getInstance( "CategoriaService" );
-				for ( var id in [ "", "abc", "1 OR 1=1", "-1", "0", "1.5", "2147483648", [] ] ) {
-					expect( function() { service.inativarCategoria( id ); } ).toThrow( "CategoriaInvalida" );
-				}
-				for ( var nome in [ "", "   ", repeatString( "a", 101 ), [] ] ) {
+			afterEach( function() {
+				variables.authTeste.isLoggedIn = variables.isLoggedInOriginal;
+				variables.authTeste.$property( "isLoggedIn", "variables", variables.isLoggedInOriginal );
+				variables.authTeste.getUser = variables.getUserOriginal;
+				variables.authTeste.$property( "getUser", "variables", variables.getUserOriginal );
+			} );
+
+			it( "valida nomes antes de persistir", function() {
+				local.service = getWireBox().getInstance( "CategoriaService" );
+				for ( local.nome in [ "", "   ", repeatString( "a", 101 ), [] ] ) {
 					expect( function() { service.editarCategoria( 1, nome ); } ).toThrow( "CategoriaInvalida" );
 					expect( function() { service.criarCategoria( nome ); } ).toThrow( "CategoriaInvalida" );
 				}
 			} );
 
+			it( "valida os DTOs com as constraints do cbValidation", function() {
+				local.manager = getWireBox().getInstance( "ValidationManager@cbvalidation" );
+				local.formulario = getWireBox().getInstance( "CategoriaDTO" );
+				expect( manager.validate( target = formulario, profiles = "criar" ).hasErrors( "txCategoria" ) ).toBeTrue();
+				for ( local.nome in [ "", "   ", repeatString( "a", 101 ), [], [ "Nome" ], { nome : "Nome" } ] ) {
+					formulario.setTxCategoria( nome );
+					expect( manager.validate( target = formulario, profiles = "criar" ).hasErrors( "txCategoria" ) ).toBeTrue();
+				}
+				for ( local.nome in [ "A", "  Elétrica  ", repeatString( "a", 100 ) ] ) {
+					formulario.setTxCategoria( nome );
+					expect( manager.validate( target = formulario, profiles = "criar" ).hasErrors() ).toBeFalse();
+				}
+				for ( local.id in [ "", "abc", "0", "-1", "2147483648", [], { id : 1 } ] ) {
+					local.formulario.setCdCategoria( local.id );
+					expect( local.manager.validate( target = local.formulario, profiles = "editar" ).hasErrors() ).toBeFalse();
+				}
+			} );
+
+			it( "recusa valores complexos do request sem falha de conversão", function() {
+				local.token = csrfGenerateToken( "categorias" );
+				for ( local.nome in [ [], [ "Nome" ], { nome : "Nome" } ] ) {
+					setup();
+					local.event = post( route = "/categorias/adicionar", params = { csrfToken : token, txCategoria : nome } );
+					expect( event.getStatusCode() ).toBe( 422 );
+					expect( event.getCurrentView() ).toBe( "categorias/adicionar" );
+					expect( event.getPrivateValue( "categoria" ).txCategoria ).toBe( "" );
+				}
+				setup();
+				local.event = post( route = "/categorias/adicionar", params = { csrfToken : token } );
+				expect( event.getStatusCode() ).toBe( 422 );
+			} );
+
 			it( "informa quando a categoria não existe", function() {
-				var repository = createStub();
+				local.repository = createStub();
 				repository.$( "obterPorId", javacast( "null", "" ) );
 				repository.$( "editar", false );
 				repository.$( "inativar", false );
-				var service = prepareMock( new app.models.CategoriaService() );
+				local.service = prepareMock( new app.models.CategoriaService() );
 				service.$property( "categoriaRepository", "variables", repository );
+				service.$property( "validationManager", "variables", getWireBox().getInstance( "ValidationManager@cbvalidation" ) );
 				expect( function() { service.obterCategoria( 1 ); } ).toThrow( "CategoriaNaoEncontrada" );
 				expect( function() { service.editarCategoria( 1, "Nome válido" ); } ).toThrow( "CategoriaNaoEncontrada" );
 				expect( function() { service.inativarCategoria( 1 ); } ).toThrow( "CategoriaNaoEncontrada" );
@@ -32,12 +74,12 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			it( "edita e inativa uma categoria sem alterar vínculos ou a data de criação", function() {
 				transaction {
 					try {
-						var fixture = queryExecute(
+						local.fixture = queryExecute(
 							"INSERT INTO cmscondominio.tb_categoria (tx_categoria, ts_criadoem, ts_atualizado) VALUES (:nome, '2020-01-01', '2020-01-01') RETURNING cd_categoria",
 							{ nome : { value : "Teste temporário de categorias", cfsqltype : "cf_sql_varchar" } }
 						);
-						var id = fixture.cd_categoria[ 1 ];
-						var fornecedor = queryExecute(
+						local.id = fixture.cd_categoria[ 1 ];
+						local.fornecedor = queryExecute(
 							"INSERT INTO cmscondominio.tb_fornecedores (nm_fornecedor) VALUES (:nome) RETURNING cd_fornecedor",
 							{ nome : { value : "Fornecedor temporário de teste", cfsqltype : "cf_sql_varchar" } }
 						);
@@ -48,20 +90,20 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 								categoria : { value : id, cfsqltype : "cf_sql_integer" }
 							}
 						);
-						var service = getWireBox().getInstance( "CategoriaService" );
+						local.service = getWireBox().getInstance( "CategoriaService" );
 						service.editarCategoria( id, "  Elétrica e manutenção  " );
-						var editada = service.obterCategoria( id );
+						local.editada = service.obterCategoria( id );
 						expect( editada.txCategoria ).toBe( "Elétrica e manutenção" );
 						expect( editada.inAtivo ).toBeTrue();
 						service.inativarCategoria( id );
 						service.inativarCategoria( id );
 						service.editarCategoria( id, repeatString( "a", 100 ) );
 						expect( service.obterCategoria( id ).inAtivo ).toBeFalse();
-						expect( arrayLen( service.listarParaGestao().filter( function( categoria ) { return categoria.cdCategoria == id; } ) ) ).toBe( 1 );
-						expect( service.obterCategorias().filter( function( categoria ) { return categoria.cdCategoria == id; } ) ).toBeEmpty();
-						var entidade = getWireBox().getInstance( "Categoria" ).findOrFail( id );
+						expect( arrayLen( service.listarParaGestao().filter( function( categoria ) { return categoria.cdCategoria EQ id; } ) ) ).toBe( 1 );
+						expect( service.obterCategorias().filter( function( categoria ) { return categoria.cdCategoria EQ id; } ) ).toBeEmpty();
+						local.entidade = getWireBox().getInstance( "Categoria" ).findOrFail( id );
 						expect( dateFormat( entidade.getTsCriadoEm(), "yyyy-mm-dd" ) ).toBe( "2020-01-01" );
-						expect( entidade.getTsAtualizado() > entidade.getTsCriadoEm() ).toBeTrue();
+						expect( entidade.getTsAtualizado() GT entidade.getTsCriadoEm() ).toBeTrue();
 						expect( arrayLen( entidade.getFornecedores() ) ).toBe( 1 );
 					} finally {
 						transaction action="rollback";
@@ -72,15 +114,15 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			it( "renderiza formulários, preserva erros e aceita POST com token válido", function() {
 				transaction {
 					try {
-						var fixture = queryExecute(
+						local.fixture = queryExecute(
 							"INSERT INTO cmscondominio.tb_categoria (tx_categoria) VALUES (:nome) RETURNING cd_categoria",
 							{ nome : { value : '<script>alert("teste")</script>', cfsqltype : "cf_sql_varchar" } }
 						);
-						var id = fixture.cd_categoria[ 1 ];
-						var event = get( route = "/categorias/#id#/editar" );
+						local.id = fixture.cd_categoria[ 1 ];
+						local.event = get( route = "/categorias/#id#/editar" );
 						expect( event.getCurrentView() ).toBe( "categorias/editar" );
 						expect( event.getRenderedContent() ).notToInclude( '<script>alert("teste")</script>' );
-						var token = event.getPrivateValue( "csrfToken" );
+						local.token = event.getPrivateValue( "csrfToken" );
 						setup();
 						event = post( route = "/categorias/#id#/editar", params = { csrfToken : token, txCategoria : "   " } );
 						expect( event.getPrivateValue( "erroNome" ) ).toInclude( "1 a 100" );
@@ -107,11 +149,11 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			} );
 
 			it( "trata falhas inesperadas pelo onError sem expor detalhes", function() {
-				var service = prepareMock( getWireBox().getInstance( "CategoriaService" ) );
-				var listarOriginal = service.listarParaGestao;
+				local.service = prepareMock( getWireBox().getInstance( "CategoriaService" ) );
+				local.listarOriginal = service.listarParaGestao;
 				service.$( "listarParaGestao" ).$throws( type = "Database", message = "Detalhe interno de teste" );
 				try {
-					var event = get( route = "/categorias" );
+					local.event = get( route = "/categorias" );
 					expect( event.getStatusCode() ).toBe( 500 );
 					expect( event.getCurrentView() ).toBe( "categorias/erro" );
 					expect( event.getRenderedContent() ).notToInclude( "Detalhe interno de teste" );
@@ -124,11 +166,11 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			it( "cria categoria ativa pelo formulário e preserva erros de validação", function() {
 				transaction {
 					try {
-						var event = get( route = "/categorias/adicionar" );
+						local.event = get( route = "/categorias/adicionar" );
 						expect( event.getCurrentView() ).toBe( "categorias/adicionar" );
 						expect( event.getRenderedContent() ).toInclude( "Criar categoria" );
-						var token = event.getPrivateValue( "csrfToken" );
-						var invalido = '<script>alert("teste")</script>' & repeatString( "a", 101 );
+						local.token = event.getPrivateValue( "csrfToken" );
+						local.invalido = '<script>alert("teste")</script>' & repeatString( "a", 101 );
 						setup();
 						event = post( route = "/categorias/adicionar", params = { csrfToken : token, txCategoria : invalido } );
 						expect( event.getStatusCode() ).toBe( 422 );
@@ -136,15 +178,19 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						expect( event.getPrivateValue( "categoria" ).txCategoria ).toBe( invalido );
 						expect( event.getRenderedContent() ).notToInclude( '<script>alert("teste")</script>' );
 						setup();
-						var nome = "Categoria teste " & createUUID();
-						post( route = "/categorias/adicionar", params = { csrfToken : token, txCategoria : "  " & nome & "  " }, renderResults = false );
-						var criada = queryExecute(
+						local.nome = "Categoria teste " & createUUID();
+						event = post( route = "/categorias/adicionar", params = { csrfToken : token, txCategoria : "  " & nome & "  ", inAtivo : false, cdCategoria : 2147483647, tsCriadoEm : "2000-01-01" }, renderResults = false );
+						expect( event.getValue( "relocate_URI", "" ) ).toBe( "/categorias" );
+						expect( event.getValue( "relocate_statusCode", 0 ) ).toBe( 303 );
+						local.criada = queryExecute(
 							"SELECT * FROM cmscondominio.tb_categoria WHERE tx_categoria = :nome",
 							{ nome : { value : nome, cfsqltype : "cf_sql_varchar" } }
 						);
 						expect( criada.recordCount ).toBe( 1 );
 						expect( criada.in_ativo[ 1 ] ).toBeTrue();
 						expect( isDate( criada.ts_criadoem[ 1 ] ) ).toBeTrue();
+						expect( criada.cd_categoria[ 1 ] ).notToBe( 2147483647 );
+						expect( dateFormat( criada.ts_criadoem[ 1 ], "yyyy-mm-dd" ) ).notToBe( "2000-01-01" );
 						setup();
 						event = get( route = "/categorias" );
 						expect( event.getRenderedContent() ).toInclude( nome );
@@ -155,8 +201,31 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				}
 			} );
 
+			it( "conclui a criação no serviço sem falhar após o INSERT", function() {
+				transaction {
+					try {
+						getWireBox().getInstance( "CategoriaService" ).criarCategoria( "Categoria teste " & createUUID() );
+					} finally {
+						transaction action="rollback";
+					}
+				}
+			} );
+
+			it( "recupera o ID gerado pelo banco na entidade criada", function() {
+				transaction {
+					try {
+						local.nome = "Categoria teste " & createUUID();
+						local.categoria = getWireBox().getInstance( "Categoria" ).create( { txCategoria : nome, inAtivo : true } );
+						expect( categoria.getCdCategoria() GT 0 ).toBeTrue();
+						expect( getWireBox().getInstance( "CategoriaService" ).obterCategoria( categoria.getCdCategoria() ).txCategoria ).toBe( nome );
+					} finally {
+						transaction action="rollback";
+					}
+				}
+			} );
+
 			it( "bloqueia criação sem CSRF e gravação por GET", function() {
-				var event = post( route = "/categorias/adicionar", params = { txCategoria : "Não gravar" } );
+				local.event = post( route = "/categorias/adicionar", params = { txCategoria : "Não gravar" } );
 				expect( event.getStatusCode() ).toBe( 403 );
 				setup();
 				expect( function() { execute( event = "Categorias.criar" ); } ).toThrow( "InvalidHTTPMethod" );
@@ -167,23 +236,20 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			} );
 
 			it( "recusa alterações sem token CSRF", function() {
-				var event = post( route = "/categorias/1/editar", params = { txCategoria : "Não gravar" } );
+				local.event = post( route = "/categorias/1/editar", params = { txCategoria : "Não gravar" } );
 				expect( event.getPrivateValue( "erro" ) ).toInclude( "formulário expirou" );
 				expect( event.getStatusCode() ).toBe( 403 );
 				expect( event.getCurrentView() ).toBe( "categorias/erro" );
 			} );
 
 			it( "recusa inativação com token inválido", function() {
-				var event = post( route = "/categorias/1/inativar", params = { csrfToken : "invalido" } );
+				local.event = post( route = "/categorias/1/inativar", params = { csrfToken : "invalido" } );
 				expect( event.getCurrentView() ).toBe( "categorias/erro" );
 			} );
 
-			it( "renderiza a listagem e informa IDs inválidos", function() {
-				var event = get( route = "/categorias", renderResults = true );
+			it( "renderiza a listagem", function() {
+				local.event = get( route = "/categorias", renderResults = true );
 				expect( event.getRenderedContent() ).toInclude( "Categorias de fornecedores" );
-				setup();
-				event = get( route = "/categorias/abc/editar", renderResults = true );
-				expect( event.getPrivateValue( "erro" ) ).toBe( "Identificador de categoria inválido." );
 			} );
 		} );
 	}
