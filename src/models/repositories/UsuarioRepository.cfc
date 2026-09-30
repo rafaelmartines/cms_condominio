@@ -2,7 +2,7 @@ component singleton {
 
 	public struct function obterPorEmail( required string email ) {
 		local.resultado = queryExecute(
-			"SELECT cd_usuario, nm_usuario, tx_email, tx_senha_hash FROM cmscondominio.tb_usuarios WHERE tx_email = :email",
+			"SELECT cd_usuario, nm_usuario, in_administrador, tx_email, tx_senha_hash FROM cmscondominio.tb_usuarios WHERE tx_email = :email",
 			{ email : { value : arguments.email, cfsqltype : "cf_sql_varchar" } },
 			{ datasource : "cmscondominio", returntype : "array" }
 		);
@@ -11,7 +11,7 @@ component singleton {
 
 	public struct function obterPorId( required numeric id ) {
 		local.resultado = queryExecute(
-			"SELECT cd_usuario, nm_usuario, tx_email FROM cmscondominio.tb_usuarios WHERE cd_usuario = :id",
+			"SELECT cd_usuario, nm_usuario, in_administrador, tx_email FROM cmscondominio.tb_usuarios WHERE cd_usuario = :id",
 			{ id : { value : arguments.id, cfsqltype : "cf_sql_integer" } },
 			{ datasource : "cmscondominio", returntype : "array" }
 		);

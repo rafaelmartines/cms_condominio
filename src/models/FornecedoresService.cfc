@@ -41,7 +41,8 @@ component singleton {
 		};
 	}
 
-	public struct function getFornecedor( required numeric cdFornecedor ) {
+	public struct function getFornecedor( required any cdFornecedor ) {
+		validarId( arguments.cdFornecedor );
 		local.fornecedor = variables.fornecedoresRepository.getFornecedor( arguments.cdFornecedor );
 
 		return {
@@ -106,6 +107,31 @@ component singleton {
 		local.media = variables.fornecedoresRepository.getMedia( arguments.cdFornecedor );
 
 		return { "media" : local.media.MEDIA };
+	}
+
+	public numeric function addFornecedor( required any fornecedorDTO ) {
+		return variables.fornecedoresRepository.addFornecedor( arguments.fornecedorDTO.validar() );
+	}
+
+	public array function listarAguardando() {
+		return variables.fornecedoresRepository.listarAguardando();
+	}
+
+	public struct function listarFornecedores( required FornecedoresFiltroDTO fornecedoresFiltroDTO ) {
+		return getFornecedores( arguments.fornecedoresFiltroDTO );
+	}
+
+	public void function aprovarFornecedor( required any cdFornecedor ) {
+		validarId( arguments.cdFornecedor );
+		if ( NOT variables.fornecedoresRepository.aprovarFornecedor( arguments.cdFornecedor ) ) {
+			throw( type = "FornecedorNaoAguardando", message = "Fornecedor inexistente ou que não está mais aguardando aprovação." );
+		}
+	}
+
+	private void function validarId( required any id ) {
+		if ( NOT isSimpleValue( arguments.id ) OR NOT reFind( "^[1-9][0-9]{0,9}$", arguments.id ) OR arguments.id GT 2147483647 ) {
+			throw( type = "FornecedorInvalido", message = "Identificador de fornecedor inválido." );
+		}
 	}
 
 }

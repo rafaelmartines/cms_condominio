@@ -72,7 +72,7 @@
                 },
                 searching: false, // REMOVE o campo de pesquisa padrão do DataTables
                 columns: [
-                    { data: 'nmFornecedor' },
+                    { data: 'nmFornecedor', render: DataTable.render.text() },
                     { data: 'categorias', render: DataTable.render.text() },
                     { data: 'html', orderable: false, searchable: false }
                 ],

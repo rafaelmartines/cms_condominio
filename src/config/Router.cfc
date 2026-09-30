@@ -43,7 +43,10 @@ component {
 		post( "/api/fornecedores/:cdFornecedor/testemunho", "api.Fornecedores.postTestemunho" );
 		get( "/api/fornecedores", "api.Fornecedores.getFornecedores" );
 
-		get( "/fornecedores/adicionar", "Fornecedores.addFornecedor" );
+		get( "/fornecedores/indicar", "Fornecedores.indicar" );
+		route( "/fornecedores/adicionar" ).withHandler( "Fornecedores" ).toAction( { GET : "addFornecedor", POST : "criar" } );
+		get( "/fornecedores/aprovacao", "Fornecedores.aprovacao" );
+		post( "/fornecedores/:cdFornecedor/aprovar", "Fornecedores.aprovarFornecedor" );
 		get( "/fornecedores/:cdFornecedor", "Fornecedores.getFornecedor" );
 
 		// Conventions-Based Routing

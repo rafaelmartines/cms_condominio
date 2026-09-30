@@ -99,8 +99,12 @@
                 <!-- Links do Menu -->
                 <div class="list-group list-group-flush">
                     <a href="/" class="list-group-item list-group-item-action active py-3"><i class="bi bi-house-door me-3"></i>Início</a>
-                    <a href="/fornecedores/adicionar" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3"></i>Indicar Novo Fornecedor</a>
+                    <a href="/fornecedores/indicar" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3"></i>Indicar Novo Fornecedor</a>
                     <cfif auth().isLoggedIn()>
+                        <a href="/fornecedores/adicionar" class="list-group-item list-group-item-action py-3">Cadastrar fornecedor</a>
+                        <cfif auth().getUser().hasPermission( "aprovarFornecedor" )>
+                            <a href="/fornecedores/aprovacao" class="list-group-item list-group-item-action py-3">Aprovar fornecedores</a>
+                        </cfif>
                     <a href="/categorias" class="list-group-item list-group-item-action py-3"><i class="bi bi-tags me-3"></i>Categorias de fornecedores</a>
                         <a href="/cadastro" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3"></i>Cadastrar usuário</a>
                         <form method="post" action="/logout">

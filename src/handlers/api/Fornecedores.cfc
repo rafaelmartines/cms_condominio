@@ -8,7 +8,7 @@ component extends="coldbox.system.RestHandler" {
 
 		local.fornecedoresFiltroDTO = populateModel( "FornecedoresFiltroDTO" );
 
-		return getInstance( "FornecedoresService" ).getFornecedores( local.fornecedoresFiltroDTO );
+		return getInstance( "FornecedoresService" ).listarFornecedores( local.fornecedoresFiltroDTO );
 	}
 
 	remote any function postTestemunho( event, rc, prc ) renderData="json" {

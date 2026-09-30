@@ -47,7 +47,7 @@ Preencha as variáveis com a configuração do seu ambiente:
 
 As quatro variáveis `RESEND_*` ainda não estão em `.env.example`: adicione-as ao `.env` local. Elas são consumidas por `Main.onAppInit`. O Compose define `ENVIRONMENT=development`; fora dele, disponibilize também essa variável ao processo. Não versione credenciais nem compartilhe saídas que expandam o conteúdo do `.env`.
 
-O Compose não cria um banco. É necessário fornecer o schema `cmscondominio`, com `tb_fornecedores`, `tb_categoria`, `tb_fornecedor_categoria` e `tb_comentarios`, conforme as consultas em `src/models/repositories/`. A busca por nome depende de `cmscondominio.unaccent`. O script `database/001_usuarios.sql` cria somente a tabela de usuários; obtenha a estrutura das demais tabelas antes de usar as páginas.
+O Compose não cria um banco. É necessário fornecer o schema `cmscondominio`, com `tb_fornecedores`, `tb_categoria`, `tb_fornecedor_categoria` e `tb_comentarios`, conforme as consultas em `src/models/repositories/`. A busca por nome usa a extensão PostgreSQL `unaccent`, instalada no schema `cmscondominio` pelo script `database/003_unaccent.sql`. O script `database/001_usuarios.sql` cria somente a tabela de usuários; obtenha a estrutura das demais tabelas antes de usar as páginas.
 
 ## Executar localmente
 
@@ -94,7 +94,10 @@ Depois, confira a URL alterada sem `fwreinit`. Os testes de integração inicial
 | Método | Caminho | Função |
 | --- | --- | --- |
 | GET | `/` | Listagem de fornecedores com filtros |
-| GET | `/fornecedores/adicionar` | Formulário de indicação |
+| GET | `/fornecedores/indicar` | Indicação por e-mail |
+| GET/POST | `/fornecedores/adicionar` | Cadastro no banco (exige login) |
+| GET | `/fornecedores/aprovacao` | Pendências (somente administradores) |
+| POST | `/fornecedores/:cdFornecedor/aprovar` | Aprovar e publicar (somente administradores) |
 | GET | `/fornecedores/:cdFornecedor` | Detalhes, comentários, média e formulário de testemunho |
 | GET | `/categorias` | Gerenciamento de categorias ativas e inativas |
 | GET / POST | `/categorias/adicionar` | Formulário e criação de categoria ativa |
@@ -117,7 +120,7 @@ A listagem recebe `filtroNome`, `filtroCategoria`, `start`, `length`, `order[0][
 
 ## Login e cadastro de usuários
 
-O cbSecurity 3.8 usa o cbAuth com autenticação por sessão. O handler `Categorias` tem `secured="true"`; visitantes são redirecionados para `/login`, inclusive nas rotas de gravação. O cadastro (`GET/POST /cadastro`) também exige autenticação. Qualquer usuário autenticado pode gerenciar categorias e cadastrar outros usuários; não há perfis administrativos distintos. O menu apresenta **Entrar** para visitantes e **Cadastrar usuário** e **Sair** para usuários autenticados.
+O cbSecurity 3.8 usa o cbAuth com autenticação por sessão. O handler `Categorias` tem `secured="true"`; visitantes são redirecionados para `/login`, inclusive nas rotas de gravação. O cadastro (`GET/POST /cadastro`) também exige autenticação. Qualquer usuário autenticado pode gerenciar categorias e cadastrar outros usuários; a aprovação de fornecedores exige a permissão administrativa descrita abaixo. O menu apresenta **Entrar** para visitantes e **Cadastrar usuário** e **Sair** para usuários autenticados.
 
 O login usa e-mail e senha. As senhas têm de 12 a 128 caracteres e são armazenadas como PBKDF2-HMAC-SHA256 com salt aleatório e 600.000 iterações, nunca em texto puro. O login renova a sessão; `POST /logout` exige CSRF e invalida a sessão. Cadastro e login também verificam CSRF. O e-mail é normalizado para minúsculas e tem restrição única no banco. O DTO `UsuarioDTO` concentra as constraints e os perfis `cadastro` e `login`.
 
@@ -142,13 +145,66 @@ Os usuários criados pelos testes são revertidos por transação. A suíte de c
 
 Referências: [autenticação no cbSecurity](https://coldbox-security.ortusbooks.com/getting-started/configuration/authentication), [GeneratePBKDFKey no Lucee](https://docs.lucee.org/reference/functions/generatepbkdfkey.html) e [armazenamento de senhas na OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
 
+## Busca por nome sem acentos
+
+Instale a extensão oficial `unaccent` no mesmo banco do datasource, após criar o schema `cmscondominio`:
+
+```sh
+psql -X -v ON_ERROR_STOP=1 -f database/003_unaccent.sql
+```
+
+O script pode ser reaplicado quando a extensão está em `cmscondominio`. Ele verifica a instalação e deve retornar `Sao Jose` para `São José`. Se a extensão já estiver em outro schema, o script interrompe a transação para que o operador revise a localização e os consumidores existentes, sem mover a extensão automaticamente. A conta de instalação precisa das permissões necessárias no banco e no schema; não é necessário concedê-las à conta da aplicação.
+
+A consulta continua usando `cmscondominio.unaccent(text)` nos dois lados da comparação, com parâmetro SQL para o nome. Assim, buscas como `sao jose` encontram `São José`. A instalação corrige a função ausente; os casts para `text` já estavam na consulta.
+
+Referência: [extensão unaccent no PostgreSQL 17](https://www.postgresql.org/docs/17/unaccent.html).
+
+## Cadastro e aprovação de fornecedores
+
+Aplique `database/002_status_fornecedor.sql` uma vez, antes de publicar esta versão, após a criação de `tb_usuarios` por `database/001_usuarios.sql` e das tabelas de fornecedores/categorias já utilizadas pela aplicação:
+
+```sh
+psql -X -v ON_ERROR_STOP=1 -f database/002_status_fornecedor.sql
+```
+
+A migração usa uma transação, cria `cmscondominio.tb_status_fornecedor` (`id`, `descricao`), adiciona a FK obrigatória `tb_fornecedores.status_id` e mantém todos os fornecedores anteriores como **Verificado**. Os IDs do catálogo são 1 = Verificado, 2 = Aguardando e 3 = Inativo. O default de novos registros é Aguardando. Não reaplique o script; ele não é idempotente. A criação das tabelas de negócio anteriores continua sendo um pré-requisito externo.
+
+A entidade Quick `Fornecedor.statusId` mapeia `status_id`. `Fornecedor.status()` usa `belongsTo`, representando ManyToOne para `StatusFornecedor.id`; `StatusFornecedor.fornecedores()` é o inverso OneToMany. As consultas da lista e dos detalhes públicos exigem Verificado. Registros aguardando, inativos e IDs inexistentes não ficam acessíveis nos detalhes públicos.
+
+`FornecedoresService.addFornecedor()` valida os dados e grava o fornecedor como Aguardando junto com suas categorias ativas, em uma transação. O formulário não aceita status fornecido pelo cliente. `aprovarFornecedor()` faz uma atualização condicional de Aguardando para Verificado; tentativas repetidas, registros inativos ou inexistentes não são aprovados. `listarFornecedores()` preserva o contrato DataTables e retorna apenas verificados. A tela de aprovação mostra os dados para conferência e publica pelo botão **Aprovar e publicar**. Não há tela de inativação neste fluxo.
+
+Cadastro exige login. Consulta das pendências e aprovação exigem também a permissão `aprovarFornecedor`. Ela vem de `tb_usuarios.in_administrador`; a migração e o cadastro de usuários deixam esse campo como `false`. Nenhuma conta é promovida automaticamente, e valores enviados por formulários não concedem essa permissão. A aprovação consulta novamente o usuário no banco, incluindo revogações feitas após o login. Os POSTs de cadastro e aprovação verificam CSRF.
+
+Para conceder a permissão, um operador com acesso ao banco deve atualizar uma conta existente, substituindo o e-mail ilustrativo. Confira que exatamente uma linha foi atualizada:
+
+```sql
+UPDATE cmscondominio.tb_usuarios
+SET in_administrador = true
+WHERE tx_email = 'administrador@example.invalid';
+```
+
+Use `false` para revogar. Entre novamente para atualizar o menu se a conta já estava logada. O cadastro do primeiro usuário permanece descrito na seção anterior.
+
+O formulário de indicação anterior foi preservado em `/fornecedores/indicar` e continua usando `POST /api/fornecedores/indicacao` para enviar e-mail, sem persistir o fornecedor. O cadastro em `/fornecedores/adicionar` grava no banco e não envia e-mail.
+
+Testes do fluxo:
+
+```sh
+curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.specs.integration.FornecedoresStatusSpec'
+```
+
+Os testes exercitam persistência e relacionamento de status, filtros por categoria, visibilidade, CSRF, login, permissão administrativa, revogação e tentativa de envio de status pelo cliente. Os registros temporários são revertidos por transação; sequences podem avançar. Não há envio de e-mail. A busca por nome requer a extensão configurada por `database/003_unaccent.sql`.
+
+Referências de implementação: [handlers no ColdBox 8](https://coldbox.ortusbooks.com/the-basics/event-handlers), [QueryExecute no Lucee](https://docs.lucee.org/reference/functions/queryexecute.html), [transações no Lucee](https://docs.lucee.org/reference/tags/transaction.html) e [CSRFVerifyToken](https://docs.lucee.org/reference/functions/csrfverifytoken.html), compatíveis com o runtime Lucee 6 do projeto.
+
 ## Models Quick ORM
 
-As entidades em `src/models/entities/` refletem as quatro tabelas consultadas no banco configurado pelo `.env`. Todas usam o datasource `cmscondominio`, tabelas qualificadas com o schema e `PostgresGrammar@qb`. Obtenha instâncias pelo WireBox; elas mantêm estado por instância e não são singletons.
+As entidades em `src/models/entities/` refletem as tabelas consultadas no banco configurado pelo `.env`. Todas usam o datasource `cmscondominio`, tabelas qualificadas com o schema e `PostgresGrammar@qb`. Obtenha instâncias pelo WireBox; elas mantêm estado por instância e não são singletons.
 
 | Model | Tabela | Chave | Relacionamentos |
 | --- | --- | --- | --- |
-| `Fornecedor` | `cmscondominio.tb_fornecedores` | `cdFornecedor` | `categorias()`, `comentarios()` |
+| `Fornecedor` | `cmscondominio.tb_fornecedores` | `cdFornecedor` | `categorias()`, `comentarios()`, `status()` |
+| `StatusFornecedor` | `cmscondominio.tb_status_fornecedor` | `id` | `fornecedores()` |
 | `Categoria` | `cmscondominio.tb_categoria` | `cdCategoria` | `fornecedores()` |
 | `Comentario` | `cmscondominio.tb_comentarios` | `cdComentario` | `fornecedor()` |
 | `FornecedorCategoria` | `cmscondominio.tb_fornecedor_categoria` | `[cdFornecedor, cdCategoria]` | `fornecedor()`, `categoria()` |
@@ -174,7 +230,7 @@ categorias = getInstance( "Categoria" )
 vinculo = getInstance( "FornecedorCategoria" ).find( [ cdFornecedor, cdCategoria ] );
 ```
 
-Os campos de data conservam o comportamento do schema: `CURRENT_TIMESTAMP` como default no insert, sem atualização automática de `tsAtualizado`/`tsAtualizadoEm`. Não foram adicionados eventos de timestamp nem migrations. Os fluxos de indicação e testemunho continuam enviando e-mail pelos services existentes.
+Os campos de data conservam o comportamento do schema: `CURRENT_TIMESTAMP` como default no insert, sem atualização automática de `tsAtualizado`/`tsAtualizadoEm`. Não foram adicionados eventos de timestamp. Os fluxos de indicação e testemunho continuam enviando e-mail pelos services existentes.
 
 `BaseEntidade` estende a entidade do Quick e informa a tipagem das duas chaves qualificadas da tabela de associação. Isso evita que o carregamento antecipado do Quick 12 envie IDs como `varchar` para comparação com colunas `integer` no PostgreSQL, sem modificar a dependência instalada.
 
@@ -246,7 +302,7 @@ Para documentação, revise caminhos e comandos e execute `git diff --check`, se
 | `src/tests/` | Runner e specs TestBox |
 | `build/`, `docker-compose.yaml` | Imagens e ambiente local |
 
-Siga as orientações de [AGENTS.md](AGENTS.md): mantenha handlers voltados ao HTTP, services à orquestração e repositories ao SQL; preserve nomes de domínio em português. Use parâmetros SQL para valores e listas permitidas para ordenação. O `orderDir` atual ainda é interpolado sem validação explícita; não replique esse padrão. Valide entradas no servidor e codifique a saída conforme o contexto.
+Siga as orientações de [AGENTS.md](AGENTS.md): mantenha handlers voltados ao HTTP, services à orquestração e repositories ao SQL; preserve nomes de domínio em português. Use parâmetros SQL para valores e listas permitidas para ordenação. A listagem aceita apenas `ASC`/`DESC` na direção de ordenação, início inteiro não negativo e tamanho inteiro de página entre 1 e 100. Valide entradas no servidor e codifique a saída conforme o contexto.
 
 Não edite dependências instaladas em `src/coldbox/`, `src/testbox/`, `src/modules/` ou `src/lib/`. Antes de adicionar um módulo, confira se ele já existe em `src/modules/`; se faltar, instale-o pelo CommandBox em `/app` com o container ativo. Ao atualizar bibliotecas da interface, atualize arquivos, licenças, manifesto e referências nas views e no layout em conjunto.
 

@@ -12,6 +12,12 @@ component
 	property name="nrTelefone" column="nr_telefone" sqltype="cf_sql_bigint";
 	property name="txInstagram" column="tx_instagram" sqltype="cf_sql_varchar";
 
+	property name="statusId" column="status_id" sqltype="cf_sql_integer";
+
+	public any function status() {
+		return belongsTo( "StatusFornecedor", "statusId", "id" );
+	}
+
 	variables._key = "cdFornecedor";
 
 	public any function keyType() {
