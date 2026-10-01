@@ -7,7 +7,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			} );
 
 			it( "consulta todas as colunas mapeadas e aceita resultado vazio", function() {
-				for ( var nome in [ "Fornecedor", "Categoria", "Comentario", "FornecedorCategoria" ] ) {
+				for ( var nome in [ "Fornecedor", "Categoria", "Comentario", "FornecedorCategoria", "Usuario" ] ) {
 					var entidade = getWireBox().getInstance( nome );
 					expect( entidade.limit( 1 ).get() ).toBeArray();
 					expect( getWireBox().getInstance( nome ).whereRaw( "1 = 0" ).get() ).toBeEmpty();

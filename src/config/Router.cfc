@@ -32,6 +32,7 @@ component {
 		// @app_routes@
 		route( "/login" ).withHandler( "Autenticacao" ).toAction( { GET : "login", POST : "entrar" } );
 		route( "/cadastro" ).withHandler( "Autenticacao" ).toAction( { GET : "cadastro", POST : "criar" } );
+		get( "/bem-vindo", "Autenticacao.boasVindas" );
 		post( "/logout", "Autenticacao.sair" );
 		route( "/categorias/adicionar" ).withHandler( "Categorias" ).toAction( { GET : "adicionar", POST : "criar" } );
 		route( "/categorias/:cdCategoria/editar" ).withHandler( "Categorias" ).toAction( { GET : "editar", POST : "salvar" } );
@@ -47,6 +48,7 @@ component {
 		route( "/fornecedores/adicionar" ).withHandler( "Fornecedores" ).toAction( { GET : "addFornecedor", POST : "criar" } );
 		get( "/fornecedores/aprovacao", "Fornecedores.aprovacao" );
 		post( "/fornecedores/:cdFornecedor/aprovar", "Fornecedores.aprovarFornecedor" );
+		post( "/fornecedores/:cdFornecedor/excluir", "Fornecedores.excluirFornecedor" );
 		get( "/fornecedores/:cdFornecedor", "Fornecedores.getFornecedor" );
 
 		// Conventions-Based Routing

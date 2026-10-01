@@ -40,7 +40,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						expect( local.service.getFornecedor( local.id ).cdFornecedor ).toBe( local.id );
 						expect( getWireBox().getInstance( "Fornecedor" ).with( "status" ).findOrFail( local.id ).getStatus().getDescricao() ).toBe( "Verificado" );
 						expect( function() { service.aprovarFornecedor( id ); } ).toThrow( "FornecedorNaoAguardando" );
-						queryExecute( "UPDATE cmscondominio.tb_fornecedores SET status_id = 3 WHERE cd_fornecedor = :id", { id : { value : local.id, cfsqltype : "cf_sql_integer" } } );
+						getWireBox().getInstance( "Fornecedor" ).where( "cdFornecedor", local.id ).updateAll( { statusId : 3 } );
 						expect( local.service.listarFornecedores( local.filtro ).data ).toBeEmpty();
 						expect( function() { service.getFornecedor( id ); } ).toThrow( "FornecedorNaoEncontrado" );
 						expect( function() { service.aprovarFornecedor( id ); } ).toThrow( "FornecedorNaoAguardando" );
@@ -52,7 +52,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				transaction {
 					try {
 						local.categoria = criarCategoria();
-						queryExecute( "UPDATE cmscondominio.tb_categoria SET in_ativo = false WHERE cd_categoria = :id", { id : { value : local.categoria, cfsqltype : "cf_sql_integer" } } );
+						getWireBox().getInstance( "Categoria" ).where( "cdCategoria", local.categoria ).updateAll( { inAtivo : false } );
 						local.dto = novoDTO( local.categoria );
 						local.service = getWireBox().getInstance( "FornecedoresService" );
 						expect( function() { service.addFornecedor( dto ); } ).toThrow( "FornecedorInvalido" );
@@ -125,6 +125,48 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				expect( function() { service.aprovarFornecedor( 2147483647 ); } ).toThrow( "FornecedorNaoAguardando" );
 			} );
 
+			it( "exclui somente Aguardando com usuário autenticado e CSRF, removendo os vínculos", function() {
+				transaction {
+					try {
+						local.categoria = criarCategoria();
+						local.service = getWireBox().getInstance( "FornecedoresService" );
+						local.id = local.service.addFornecedor( novoDTO( local.categoria ) );
+						local.auth = getWireBox().getInstance( "authenticationService@cbauth" );
+						local.auth.logout();
+						local.event = post( route = "/fornecedores/#local.id#/excluir", renderResults = false );
+						expect( local.event.getValue( "relocate_event", "" ) ).toBe( "login" );
+						local.usuarioId = criarUsuario();
+						local.auth.login( getWireBox().getInstance( "UsuarioService" ).retrieveUserById( local.usuarioId ) );
+						setup();
+						local.event = post( route = "/fornecedores/#local.id#/excluir" );
+						expect( local.event.getStatusCode() ).toBe( 403 );
+						setup();
+						expect( function() { execute( event = "Fornecedores.excluirFornecedor" ); } ).toThrow( "InvalidHTTPMethod" );
+						local.verificado = local.service.addFornecedor( novoDTO( local.categoria ) );
+						local.service.aprovarFornecedor( local.verificado );
+						expect( function() { service.excluirFornecedor( verificado ); } ).toThrow( "FornecedorNaoAguardando" );
+						local.listagem = local.service.listarAguardando();
+						expect( arrayFind( local.listagem, function( fornecedor ) { return arguments.fornecedor.cd_fornecedor EQ id; } ) ).toBeGT( 0 );
+						expect( arrayFind( local.listagem, function( fornecedor ) { return arguments.fornecedor.cd_fornecedor EQ verificado; } ) ).toBe( 0 );
+						setup();
+						local.event = get( route = "/fornecedores/aprovacao" );
+						expect( local.event.getRenderedContent() ).toInclude( "/fornecedores/#local.id#/excluir" );
+						setup();
+						local.event = post( route = "/fornecedores/#local.id#/excluir", params = { csrfToken : csrfGenerateToken( "fornecedores" ) }, renderResults = false );
+						expect( local.event.getValue( "relocate_URI", "" ) ).toBe( "/fornecedores/aprovacao" );
+						local.registros = queryExecute( "SELECT cd_fornecedor FROM cmscondominio.tb_fornecedores WHERE cd_fornecedor = :id", { id : { value : local.id, cfsqltype : "cf_sql_integer" } } );
+						expect( local.registros.recordCount ).toBe( 0 );
+						local.vinculos = queryExecute( "SELECT cd_fornecedor FROM cmscondominio.tb_fornecedor_categoria WHERE cd_fornecedor = :id", { id : { value : local.id, cfsqltype : "cf_sql_integer" } } );
+						expect( local.vinculos.recordCount ).toBe( 0 );
+						expect( function() { service.excluirFornecedor( id ); } ).toThrow( "FornecedorNaoAguardando" );
+						expect( function() { service.excluirFornecedor( "1 OR 1=1" ); } ).toThrow( "FornecedorInvalido" );
+					} finally {
+						getWireBox().getInstance( "authenticationService@cbauth" ).logout();
+						transaction action="rollback";
+					}
+				}
+			} );
+
 			it( "protege cadastro e aprovação contra visitantes inclusive por evento direto", function() {
 				getWireBox().getInstance( "authenticationService@cbauth" ).logout();
 				for ( local.rota in [ "/fornecedores/adicionar", "/fornecedores/aprovacao", "/Fornecedores/aprovacao" ] ) {
@@ -137,7 +179,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				expect( local.event.getValue( "relocate_event", "" ) ).toBe( "login" );
 			} );
 
-			it( "somente administrador aprova; verifica CSRF, formulários, XSS e revogação", function() {
+			it( "usuário autenticado aprova; verifica CSRF, formulários, XSS e encerramento da sessão", function() {
 				transaction {
 					try {
 						local.usuarioId = criarUsuario();
@@ -146,9 +188,10 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						expect( function() { execute( event = "Fornecedores.aprovarFornecedor" ); } ).toThrow( "InvalidHTTPMethod" );
 						setup();
 						local.event = get( route = "/fornecedores/aprovacao" );
-						expect( local.event.getStatusCode() ).toBe( 403 );
+						expect( local.event.getCurrentView() ).toBe( "fornecedores/aprovacao" );
+						expect( local.event.getRenderedContent() ).toInclude( 'href="/fornecedores/aprovacao"' );
 						setup();
-						local.event = post( route = "/fornecedores/1/aprovar", params = { csrfToken : csrfGenerateToken( "fornecedores" ) } );
+						local.event = post( route = "/fornecedores/1/aprovar" );
 						expect( local.event.getStatusCode() ).toBe( 403 );
 						setup();
 						local.event = get( route = "/fornecedores/adicionar" );
@@ -168,7 +211,6 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						expect( local.event.getValue( "relocate_statusCode", 0 ) ).toBe( 303 );
 						local.fornecedor = getWireBox().getInstance( "Fornecedor" ).where( "nmFornecedor", local.nome ).firstOrFail();
 						expect( local.fornecedor.getStatus().getDescricao() ).toBe( "Aguardando" );
-						queryExecute( "UPDATE cmscondominio.tb_usuarios SET in_administrador = true WHERE cd_usuario = :id", { id : { value : local.usuarioId, cfsqltype : "cf_sql_integer" } } );
 						setup();
 						local.event = get( route = "/fornecedores/aprovacao" );
 						expect( local.event.getRenderedContent() ).toInclude( local.nome );
@@ -178,10 +220,11 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						setup();
 						local.event = post( route = "/fornecedores/#local.fornecedor.getCdFornecedor()#/aprovar", params = { csrfToken : local.token }, renderResults = false );
 						expect( local.event.getValue( "relocate_statusCode", 0 ) ).toBe( 303 );
-						queryExecute( "UPDATE cmscondominio.tb_usuarios SET in_administrador = false WHERE cd_usuario = :id", { id : { value : local.usuarioId, cfsqltype : "cf_sql_integer" } } );
+						expect( getWireBox().getInstance( "Fornecedor" ).findOrFail( local.fornecedor.getCdFornecedor() ).getStatus().getDescricao() ).toBe( "Verificado" );
+						local.auth.logout();
 						setup();
-						local.event = get( route = "/fornecedores/aprovacao" );
-						expect( local.event.getStatusCode() ).toBe( 403 );
+						local.event = get( route = "/fornecedores/aprovacao", renderResults = false );
+						expect( local.event.getValue( "relocate_event", "" ) ).toBe( "login" );
 					} finally {
 						getWireBox().getInstance( "authenticationService@cbauth" ).logout();
 						transaction action="rollback";
@@ -208,13 +251,17 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 	}
 
 	private numeric function criarCategoria() {
-		return queryExecute( "INSERT INTO cmscondominio.tb_categoria (tx_categoria, in_ativo) VALUES ('Categoria temporária de status', true) RETURNING cd_categoria" ).cd_categoria[ 1 ];
+		return getWireBox().getInstance( "Categoria" ).create( {
+			txCategoria : "Categoria temporária de status",
+			inAtivo : true
+		} ).getCdCategoria();
 	}
 
 	private numeric function criarUsuario() {
-		return queryExecute(
-			"INSERT INTO cmscondominio.tb_usuarios (nm_usuario, tx_email, tx_senha_hash) VALUES ('Teste status', :email, 'inutilizavel') RETURNING cd_usuario",
-			{ email : { value : lCase( createUUID() ) & "@example.invalid", cfsqltype : "cf_sql_varchar" } }
-		).cd_usuario[ 1 ];
+		return getWireBox().getInstance( "Usuario" ).create( {
+			nmUsuario : "Teste status",
+			txEmail : lCase( createUUID() ) & "@example.invalid",
+			txSenhaHash : "inutilizavel"
+		} ).getCdUsuario();
 	}
 }

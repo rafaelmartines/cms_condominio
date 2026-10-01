@@ -128,6 +128,13 @@ component singleton {
 		}
 	}
 
+	public void function excluirFornecedor( required any cdFornecedor ) {
+		validarId( arguments.cdFornecedor );
+		if ( NOT variables.fornecedoresRepository.excluirFornecedor( arguments.cdFornecedor ) ) {
+			throw( type = "FornecedorNaoAguardando", message = "Fornecedor inexistente ou que não está mais aguardando aprovação." );
+		}
+	}
+
 	private void function validarId( required any id ) {
 		if ( NOT isSimpleValue( arguments.id ) OR NOT reFind( "^[1-9][0-9]{0,9}$", arguments.id ) OR arguments.id GT 2147483647 ) {
 			throw( type = "FornecedorInvalido", message = "Identificador de fornecedor inválido." );

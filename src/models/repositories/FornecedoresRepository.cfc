@@ -1,6 +1,8 @@
 component singleton extends="BaseRepository" {
 
 	property name="cbpaginator" inject="Pagination@cbpaginator";
+	property name="fornecedorProvider" inject="provider:Fornecedor";
+	property name="fornecedorCategoriaProvider" inject="provider:FornecedorCategoria";
 
 	public FornecedoresRepository function init() {
 		super.init();
@@ -193,28 +195,20 @@ component singleton extends="BaseRepository" {
 			if ( local.categorias.recordCount NEQ arrayLen( arguments.dados.categorias ) ) {
 				throw( type = "FornecedorInvalido", message = "Selecione somente categorias existentes e ativas." );
 			}
-			local.criado = queryExecute(
-				"INSERT INTO cmscondominio.tb_fornecedores (nm_fornecedor, nm_empresa, nr_telefone, tx_instagram, status_id)
-				VALUES (:nome, :empresa, :telefone, :instagram, (SELECT id FROM cmscondominio.tb_status_fornecedor WHERE descricao = :status)) RETURNING cd_fornecedor",
-				{
-					nome : { value : arguments.dados.nmFornecedor, cfsqltype : "cf_sql_varchar" },
-					empresa : { value : arguments.dados.nmEmpresa, cfsqltype : "cf_sql_varchar" },
-					telefone : { value : arguments.dados.nrTelefone, cfsqltype : "cf_sql_bigint" },
-					instagram : { value : arguments.dados.txInstagram, cfsqltype : "cf_sql_varchar" },
-					status : { value : "Aguardando", cfsqltype : "cf_sql_varchar" }
-				},
-				{ datasource : "cmscondominio" }
-			);
-			local.id = local.criado.cd_fornecedor[ 1 ];
+			local.status = obterStatus( "Aguardando" );
+			local.criado = variables.fornecedorProvider.$get().create( {
+				nmFornecedor : arguments.dados.nmFornecedor,
+				nmEmpresa : arguments.dados.nmEmpresa,
+				nrTelefone : arguments.dados.nrTelefone,
+				txInstagram : arguments.dados.txInstagram,
+				statusId : local.status
+			} );
+			local.id = local.criado.getCdFornecedor();
 			for ( local.categoria in arguments.dados.categorias ) {
-				queryExecute(
-					"INSERT INTO cmscondominio.tb_fornecedor_categoria (cd_fornecedor, cd_categoria) VALUES (:fornecedor, :categoria)",
-					{
-						fornecedor : { value : local.id, cfsqltype : "cf_sql_integer" },
-						categoria : { value : local.categoria, cfsqltype : "cf_sql_integer" }
-					},
-					{ datasource : "cmscondominio" }
-				);
+				variables.fornecedorCategoriaProvider.$get().create( {
+					cdFornecedor : local.id,
+					cdCategoria : local.categoria
+				} );
 			}
 		}
 		return local.id;
@@ -234,18 +228,46 @@ component singleton extends="BaseRepository" {
 	}
 
 	public boolean function aprovarFornecedor( required numeric cdFornecedor ) {
-		local.resultado = queryExecute(
-			"UPDATE cmscondominio.tb_fornecedores SET status_id = (SELECT id FROM cmscondominio.tb_status_fornecedor WHERE descricao = :destino)
-			WHERE cd_fornecedor = :id AND status_id = (SELECT id FROM cmscondominio.tb_status_fornecedor WHERE descricao = :origem)
-			RETURNING cd_fornecedor",
-			{
-				id : { value : arguments.cdFornecedor, cfsqltype : "cf_sql_integer" },
-				origem : { value : "Aguardando", cfsqltype : "cf_sql_varchar" },
-				destino : { value : "Verificado", cfsqltype : "cf_sql_varchar" }
-			},
-			{ datasource : "cmscondominio" }
+		local.origem = obterStatus( "Aguardando" );
+		local.destino = obterStatus( "Verificado" );
+		local.resultado = variables.fornecedorProvider.$get()
+			.where( "cdFornecedor", arguments.cdFornecedor )
+			.where( "statusId", local.origem )
+			.updateAll( { statusId : local.destino } );
+		return local.resultado.result.recordCount EQ 1;
+	}
+
+	public boolean function excluirFornecedor( required numeric cdFornecedor ) {
+		local.parametros = {
+			id : { value : arguments.cdFornecedor, cfsqltype : "cf_sql_integer" },
+			status : { value : "Aguardando", cfsqltype : "cf_sql_varchar" }
+		};
+		transaction {
+			local.fornecedores = variables.consulta(
+				"SELECT cd_fornecedor FROM cmscondominio.tb_fornecedores
+				WHERE cd_fornecedor = :id AND status_id =
+				(SELECT id FROM cmscondominio.tb_status_fornecedor WHERE descricao = :status)
+				FOR UPDATE",
+				local.parametros
+			);
+			if ( NOT arrayLen( local.fornecedores ) ) return false;
+			local.id = { id : local.parametros.id };
+			queryExecute( "DELETE FROM cmscondominio.tb_fornecedor_categoria WHERE cd_fornecedor = :id", local.id, { datasource : "cmscondominio" } );
+			queryExecute( "DELETE FROM cmscondominio.tb_comentarios WHERE cd_fornecedor = :id", local.id, { datasource : "cmscondominio" } );
+			queryExecute( "DELETE FROM cmscondominio.tb_fornecedores WHERE cd_fornecedor = :id", local.id, { datasource : "cmscondominio" } );
+		}
+		return true;
+	}
+
+	private numeric function obterStatus( required string descricao ) {
+		local.resultados = variables.consulta(
+			"SELECT id FROM cmscondominio.tb_status_fornecedor WHERE descricao = :descricao",
+			{ descricao : { value : arguments.descricao, cfsqltype : "cf_sql_varchar" } }
 		);
-		return local.resultado.recordCount EQ 1;
+		if ( arrayLen( local.resultados ) NEQ 1 ) {
+			throw( type = "StatusFornecedorInvalido", message = "Status de fornecedor não configurado." );
+		}
+		return local.resultados[ 1 ].id;
 	}
 
 }

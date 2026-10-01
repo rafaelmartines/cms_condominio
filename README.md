@@ -8,8 +8,8 @@ Os formulários enviam mensagens pelo Resend; esses fluxos não gravam fornecedo
 
 - Lucee 6, pela imagem `ortussolutions/commandbox:lucee6-3.16.0`.
 - ColdBox `8.2.0+35` e WireBox; dependências em `src/box.json`.
-- PostgreSQL, com SQL nos repositories e datasource `cmscondominio`.
-- Paginação com `cbpaginator` e entidades Quick 12 em `src/models/entities/`. Os repositories atuais continuam usando SQL diretamente.
+- PostgreSQL, com datasource `cmscondominio`: consultas complexas usam SQL puro nos repositories; operações de escrita usam QuickORM.
+- Paginação com `cbpaginator` e entidades Quick 12 em `src/models/entities/`. As escritas de categorias, fornecedores, vínculos e usuários usam Quick; o cadastro de usuários usa `insertIgnore()` pelo builder da entidade para tratar e-mails duplicados sem abortar a transação.
 - Templates CFML, Bootstrap `5.3.3`, Bootstrap Icons `1.11.3`, jQuery `3.7.1` e DataTables `2.0.8`.
 - TestBox para testes. Não há pipeline npm configurado.
 
@@ -171,19 +171,9 @@ A migração usa uma transação, cria `cmscondominio.tb_status_fornecedor` (`id
 
 A entidade Quick `Fornecedor.statusId` mapeia `status_id`. `Fornecedor.status()` usa `belongsTo`, representando ManyToOne para `StatusFornecedor.id`; `StatusFornecedor.fornecedores()` é o inverso OneToMany. As consultas da lista e dos detalhes públicos exigem Verificado. Registros aguardando, inativos e IDs inexistentes não ficam acessíveis nos detalhes públicos.
 
-`FornecedoresService.addFornecedor()` valida os dados e grava o fornecedor como Aguardando junto com suas categorias ativas, em uma transação. O formulário não aceita status fornecido pelo cliente. `aprovarFornecedor()` faz uma atualização condicional de Aguardando para Verificado; tentativas repetidas, registros inativos ou inexistentes não são aprovados. `listarFornecedores()` preserva o contrato DataTables e retorna apenas verificados. A tela de aprovação mostra os dados para conferência e publica pelo botão **Aprovar e publicar**. Não há tela de inativação neste fluxo.
+`FornecedoresService.addFornecedor()` valida os dados e grava o fornecedor como Aguardando junto com suas categorias ativas, em uma transação. O formulário não aceita status fornecido pelo cliente. `aprovarFornecedor()` faz uma atualização condicional de Aguardando para Verificado; tentativas repetidas, registros inativos ou inexistentes não são aprovados. `listarFornecedores()` preserva o contrato DataTables e retorna apenas verificados. A tela de aprovação mostra os dados para conferência e oferece as ações **Aprovar** e **Excluir**. Não há tela de inativação neste fluxo.
 
-Cadastro exige login. Consulta das pendências e aprovação exigem também a permissão `aprovarFornecedor`. Ela vem de `tb_usuarios.in_administrador`; a migração e o cadastro de usuários deixam esse campo como `false`. Nenhuma conta é promovida automaticamente, e valores enviados por formulários não concedem essa permissão. A aprovação consulta novamente o usuário no banco, incluindo revogações feitas após o login. Os POSTs de cadastro e aprovação verificam CSRF.
-
-Para conceder a permissão, um operador com acesso ao banco deve atualizar uma conta existente, substituindo o e-mail ilustrativo. Confira que exatamente uma linha foi atualizada:
-
-```sql
-UPDATE cmscondominio.tb_usuarios
-SET in_administrador = true
-WHERE tx_email = 'administrador@example.invalid';
-```
-
-Use `false` para revogar. Entre novamente para atualizar o menu se a conta já estava logada. O cadastro do primeiro usuário permanece descrito na seção anterior.
+Cadastro, consulta das pendências, aprovação e exclusão exigem autenticação. Qualquer usuário autenticado pode acessar `/fornecedores/aprovacao` e aprovar ou excluir fornecedores com status **Aguardando**, sem permissão de administrador. O menu de aprovação aparece após o login. Os POSTs de cadastro, aprovação e exclusão verificam CSRF. A exclusão remove o fornecedor e seus vínculos em uma transação; fornecedores verificados ou inativos não podem ser excluídos por este fluxo.
 
 O formulário de indicação anterior foi preservado em `/fornecedores/indicar` e continua usando `POST /api/fornecedores/indicacao` para enviar e-mail, sem persistir o fornecedor. O cadastro em `/fornecedores/adicionar` grava no banco e não envia e-mail.
 

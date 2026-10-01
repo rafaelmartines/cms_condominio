@@ -20,9 +20,7 @@ component
 
 	variables._key = "cdFornecedor";
 
-	public any function keyType() {
-		return variables._wirebox.getInstance( "ReturningKeyType@quick" );
-	}
+	// No Lucee, o Quick recupera o ID pelos metadados do INSERT.
 
 	public any function categorias() {
 		return belongsToMany(

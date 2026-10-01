@@ -32,9 +32,9 @@
 									</td>
 									<td>
 										<div class="d-flex flex-wrap gap-2">
-											<a href="/categorias/#categoria.cdCategoria#/editar" class="btn btn-sm btn-outline-primary" aria-label="Editar #encodeForHTMLAttribute( categoria.txCategoria )#">Editar</a>
+											<a href="/categorias/#categoria.cdCategoria#/editar" class="btn btn-sm btn-outline-primary" aria-label="Editar #encodeForHTMLAttribute( categoria.txCategoria )#" title="Editar"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
 											<cfif categoria.inAtivo>
-												<a href="/categorias/#categoria.cdCategoria#/inativar" class="btn btn-sm btn-outline-danger" aria-label="Inativar #encodeForHTMLAttribute( categoria.txCategoria )#">Inativar</a>
+												<a href="/categorias/#categoria.cdCategoria#/inativar" class="btn btn-sm btn-outline-danger" aria-label="Inativar #encodeForHTMLAttribute( categoria.txCategoria )#" title="Inativar"><i class="bi bi-slash-circle" aria-hidden="true"></i></a>
 											</cfif>
 										</div>
 									</td>

@@ -74,22 +74,19 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			it( "edita e inativa uma categoria sem alterar vínculos ou a data de criação", function() {
 				transaction {
 					try {
-						local.fixture = queryExecute(
-							"INSERT INTO cmscondominio.tb_categoria (tx_categoria, ts_criadoem, ts_atualizado) VALUES (:nome, '2020-01-01', '2020-01-01') RETURNING cd_categoria",
-							{ nome : { value : "Teste temporário de categorias", cfsqltype : "cf_sql_varchar" } }
-						);
-						local.id = fixture.cd_categoria[ 1 ];
-						local.fornecedor = queryExecute(
-							"INSERT INTO cmscondominio.tb_fornecedores (nm_fornecedor) VALUES (:nome) RETURNING cd_fornecedor",
-							{ nome : { value : "Fornecedor temporário de teste", cfsqltype : "cf_sql_varchar" } }
-						);
-						queryExecute(
-							"INSERT INTO cmscondominio.tb_fornecedor_categoria (cd_fornecedor, cd_categoria) VALUES (:fornecedor, :categoria)",
-							{
-								fornecedor : { value : fornecedor.cd_fornecedor[ 1 ], cfsqltype : "cf_sql_integer" },
-								categoria : { value : id, cfsqltype : "cf_sql_integer" }
-							}
-						);
+						local.fixture = getWireBox().getInstance( "Categoria" ).create( {
+							txCategoria : "Teste temporário de categorias",
+							tsCriadoEm : createDate( 2020, 1, 1 ),
+							tsAtualizado : createDate( 2020, 1, 1 )
+						} );
+						local.id = local.fixture.getCdCategoria();
+						local.fornecedor = getWireBox().getInstance( "Fornecedor" ).create( {
+							nmFornecedor : "Fornecedor temporário de teste"
+						} );
+						getWireBox().getInstance( "FornecedorCategoria" ).create( {
+							cdFornecedor : local.fornecedor.getCdFornecedor(),
+							cdCategoria : local.id
+						} );
 						local.service = getWireBox().getInstance( "CategoriaService" );
 						service.editarCategoria( id, "  Elétrica e manutenção  " );
 						local.editada = service.obterCategoria( id );
@@ -114,11 +111,10 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			it( "renderiza formulários, preserva erros e aceita POST com token válido", function() {
 				transaction {
 					try {
-						local.fixture = queryExecute(
-							"INSERT INTO cmscondominio.tb_categoria (tx_categoria) VALUES (:nome) RETURNING cd_categoria",
-							{ nome : { value : '<script>alert("teste")</script>', cfsqltype : "cf_sql_varchar" } }
-						);
-						local.id = fixture.cd_categoria[ 1 ];
+						local.fixture = getWireBox().getInstance( "Categoria" ).create( {
+							txCategoria : '<script>alert("teste")</script>'
+						} );
+						local.id = local.fixture.getCdCategoria();
 						local.event = get( route = "/categorias/#id#/editar" );
 						expect( event.getCurrentView() ).toBe( "categorias/editar" );
 						expect( event.getRenderedContent() ).notToInclude( '<script>alert("teste")</script>' );

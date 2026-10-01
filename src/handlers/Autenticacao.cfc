@@ -3,10 +3,17 @@ component extends="coldbox.system.EventHandler" {
 	property name="authenticationService" inject="authenticationService@cbauth";
 	property name="usuarioService" inject="UsuarioService";
 
-	this.allowedMethods = { login : "GET", entrar : "POST", cadastro : "GET", criar : "POST", sair : "POST" };
+	this.allowedMethods = { login : "GET", entrar : "POST", cadastro : "GET", criar : "POST", sair : "POST", boasVindas : "GET" };
 
 	public void function login( event, rc, prc ) {
 		prepararFormulario( arguments.event, arguments.prc, false );
+	}
+
+	public void function boasVindas( event, rc, prc ) secured="true" {
+		arguments.prc.titulo = "Bem-vindo(a)";
+		arguments.prc.nmUsuario = variables.authenticationService.getUser().getNmUsuario();
+		arguments.event.setHTTPHeader( name = "Cache-Control", value = "no-store" );
+		arguments.event.setView( "autenticacao/boasVindas" );
 	}
 
 	public void function cadastro( event, rc, prc ) secured="true" {
@@ -22,7 +29,7 @@ component extends="coldbox.system.EventHandler" {
 		variables.authenticationService.authenticate( lCase( trim( local.dto.getTxEmail() ) ), local.dto.getTxSenha() );
 		sessionRotate();
 		csrfGenerateToken( "autenticacao", true );
-		relocate( uri = "/categorias", statusCode = 303 );
+		relocate( uri = "/bem-vindo", statusCode = 303 );
 	}
 
 	public void function criar( event, rc, prc ) secured="true" {

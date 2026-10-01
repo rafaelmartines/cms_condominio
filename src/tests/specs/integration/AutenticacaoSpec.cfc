@@ -11,8 +11,8 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				getWireBox().getInstance( "authenticationService@cbauth" ).logout( quiet = true );
 			} );
 
-			it( "redireciona visitantes em todas as rotas de categorias e no cadastro", function() {
-				for ( local.rota in [ "/categorias", "/categorias/adicionar", "/categorias/1/editar", "/categorias/1/inativar", "/cadastro" ] ) {
+			it( "redireciona visitantes nas categorias, cadastro e boas-vindas", function() {
+				for ( local.rota in [ "/categorias", "/categorias/adicionar", "/categorias/1/editar", "/categorias/1/inativar", "/cadastro", "/bem-vindo" ] ) {
 					setup();
 					local.evento = get( route = local.rota, renderResults = false );
 					expect( local.evento.getValue( "relocate_event", "" ) ).toBe( "login" );
@@ -89,8 +89,12 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						expect( local.evento.getRenderedContent() ).notToInclude( "SenhaErrada123!" );
 						setup();
 						local.evento = post( route = "/login", params = { csrfToken : local.token, txEmail : local.email, txSenha : "SenhaTeste123!" }, renderResults = false );
-						expect( local.evento.getValue( "relocate_URI", "" ) ).toBe( "/categorias" );
+						expect( local.evento.getValue( "relocate_URI", "" ) ).toBe( "/bem-vindo" );
 						expect( getWireBox().getInstance( "authenticationService@cbauth" ).isLoggedIn() ).toBeTrue();
+						setup();
+						local.evento = get( route = "/bem-vindo" );
+						expect( local.evento.getCurrentView() ).toBe( "autenticacao/boasVindas" );
+						expect( local.evento.getRenderedContent() ).toInclude( "Bem-vindo(a), " & encodeForHTML( "Usuário de teste" ) );
 						setup();
 						local.evento = get( route = "/categorias" );
 						expect( local.evento.getCurrentView() ).toBe( "categorias/index" );

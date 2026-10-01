@@ -1,5 +1,5 @@
 component extends="coldbox.system.EventHandler" {
-	this.allowedMethods = { getFornecedor : "GET", indicar : "GET", addFornecedor : "GET", criar : "POST", aprovacao : "GET", aprovarFornecedor : "POST" };
+	this.allowedMethods = { getFornecedor : "GET", indicar : "GET", addFornecedor : "GET", criar : "POST", aprovacao : "GET", aprovarFornecedor : "POST", excluirFornecedor : "POST" };
 
 
 	public any function getFornecedor( event, rc, prc ) {
@@ -27,12 +27,11 @@ component extends="coldbox.system.EventHandler" {
 		if ( NOT validarToken( arguments.event, arguments.rc, arguments.prc ) ) return;
 		local.dto = populateModel( model = "FornecedorDTO", include = "nmFornecedor,nmEmpresa,nrTelefone,txInstagram,categorias" );
 		getInstance( "FornecedoresService" ).addFornecedor( local.dto );
-		flash.put( "fornecedoresMensagem", "Fornecedor cadastrado. Aguarde a aprovação de um administrador." );
+		flash.put( "fornecedoresMensagem", "Fornecedor cadastrado. Aguarde a aprovação." );
 		relocate( uri = "/fornecedores/adicionar", statusCode = 303 );
 	}
 
 	public void function aprovacao( event, rc, prc ) secured="true" {
-		if ( NOT validarAdministrador( arguments.event, arguments.prc ) ) return;
 		arguments.prc.titulo = "Aprovação de fornecedores";
 		arguments.prc.fornecedores = getInstance( "FornecedoresService" ).listarAguardando();
 		arguments.prc.csrfToken = csrfGenerateToken( "fornecedores" );
@@ -41,10 +40,16 @@ component extends="coldbox.system.EventHandler" {
 	}
 
 	public void function aprovarFornecedor( event, rc, prc ) secured="true" {
-		if ( NOT validarAdministrador( arguments.event, arguments.prc ) ) return;
 		if ( NOT validarToken( arguments.event, arguments.rc, arguments.prc ) ) return;
 		getInstance( "FornecedoresService" ).aprovarFornecedor( arguments.rc.cdFornecedor ?: "" );
 		flash.put( "fornecedoresMensagem", "Fornecedor aprovado e publicado na lista." );
+		relocate( uri = "/fornecedores/aprovacao", statusCode = 303 );
+	}
+
+	public void function excluirFornecedor( event, rc, prc ) secured="true" {
+		if ( NOT validarToken( arguments.event, arguments.rc, arguments.prc ) ) return;
+		getInstance( "FornecedoresService" ).excluirFornecedor( arguments.rc.cdFornecedor ?: "" );
+		flash.put( "fornecedoresMensagem", "Fornecedor excluído com sucesso." );
 		relocate( uri = "/fornecedores/aprovacao", statusCode = 303 );
 	}
 
@@ -80,14 +85,6 @@ component extends="coldbox.system.EventHandler" {
 		arguments.prc.mensagem = flash.get( "fornecedoresMensagem", "" );
 		param arguments.prc.erro = "";
 		arguments.event.setView( "fornecedores/adicionar" );
-	}
-
-	private boolean function validarAdministrador( required any event, required struct prc ) {
-		// Consulta a permissão atual para que revogações não dependam de um novo login.
-		local.usuario = getInstance( "UsuarioService" ).retrieveUserById( auth().getUser().getId() );
-		if ( local.usuario.hasPermission( "aprovarFornecedor" ) ) return true;
-		exibirErro( arguments.event, arguments.prc, 403, "Somente administradores podem aprovar fornecedores." );
-		return false;
 	}
 
 	private boolean function validarToken( required any event, required struct rc, required struct prc ) {
