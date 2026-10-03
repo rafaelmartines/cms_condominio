@@ -1,7 +1,7 @@
 component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 	function run() {
 		describe( "Autenticação e cadastro restrito com Bearer", function() {
-			beforeEach( function() { setup(); } );
+			beforeEach( function() { setup(); prepareMock( getWireBox().getInstance( "ErroService" ) ).$( "notificar" ); } );
 			it( "recusa visitantes inclusive em eventos diretos", function() {
 				for ( local.rota in [ "/categorias", "/categorias/adicionar", "/cadastro", "/bem-vindo" ] ) {
 					setup();

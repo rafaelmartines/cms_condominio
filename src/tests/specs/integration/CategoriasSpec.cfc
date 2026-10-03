@@ -3,7 +3,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 	function run() {
 		describe( "Gerenciamento de categorias", function() {
 			beforeEach( function() {
-				setup();
+				setup(); prepareMock( getWireBox().getInstance( "ErroService" ) ).$( "notificar" );
 				variables.authTeste = prepareMock( getWireBox().getInstance( "security.JwtAuthenticationService" ) );
 				variables.isLoggedInOriginal = variables.authTeste.isLoggedIn;
 				variables.getUserOriginal = variables.authTeste.getUser;

@@ -321,3 +321,11 @@ podman build -f build/Dockerfile -t cms-condominio .
 ```
 
 A imagem usa Lucee 6, apesar dos comentários que mencionam Lucee 7. O build não provisiona PostgreSQL, schema nem credenciais: disponibilize as variáveis de banco, Resend e ambiente no runtime de destino. O Compose existente está configurado para desenvolvimento.
+
+## Notificação de erros
+
+O interceptor `NotificacaoErros` notifica respostas HTTP de erro (400–599) e exceções não tratadas, inclusive nas APIs, usando `Resend.enviarEmail()`. O destinatário é `RESEND_TO`, com as mesmas configurações `RESEND_URI`, `RESEND_KEY` e `RESEND_FROM` dos demais e-mails. Há no máximo uma tentativa por requisição. Falhas de envio são registradas no LogBox e não substituem o erro original nem geram novas notificações; a chamada HTTP ao Resend tem timeout de 10 segundos.
+
+Cada mensagem anexa um arquivo `.log` em Base64 com o registro daquela ocorrência: identificador, horário, status HTTP, evento, método, tipo da exceção e até 50 localizações de arquivo/linha da pilha. O mesmo registro é enviado ao LogBox. Não são anexados arquivos completos do container, corpo/headers da requisição, cookies, SQL, valores do formulário ou mensagens brutas da exceção, que podem conter senhas, tokens e dados pessoais. Respostas de validação ou autenticação também geram e-mail. Erros do proxy, do container ou anteriores ao bootstrap do ColdBox não passam por esse interceptor.
+
+Os testes em `src/tests/specs/integration/ErrosSpec.cfc` simulam o Resend para verificar anexo, ausência de segredos, deduplicação, falha de envio e integração com o tratamento HTTP, sem enviar mensagens reais.

@@ -50,6 +50,7 @@ component extends="coldbox.system.EventHandler" {
 	}
 
 	public void function onError( event, rc, prc, faultAction, exception, eventArguments ) {
+		arguments.prc.erroNotificacao = arguments.exception;
 		if ( listFindNoCase( "InvalidHTTPMethod,TestController.relocate", arguments.exception.type ) ) throw( object = arguments.exception );
 		if ( arguments.exception.type EQ "FornecedorInvalido" AND arguments.faultAction EQ "criar" ) {
 			arguments.prc.dados = {};

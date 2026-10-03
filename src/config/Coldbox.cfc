@@ -126,7 +126,7 @@ component {
 		 * --------------------------------------------------------------------------
 		 * Remember that the order of declaration is the order they will be registered and fired
 		 */
-		variables.interceptors = [];
+		variables.interceptors = [ { class : "interceptors.NotificacaoErros" } ];
 
 		/**
 		 * --------------------------------------------------------------------------

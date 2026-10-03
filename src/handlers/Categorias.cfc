@@ -56,6 +56,7 @@ component extends="coldbox.system.EventHandler" secured="true" {
 	}
 
 	public void function onError( event, rc, prc, faultAction, exception, eventArguments ) {
+		arguments.prc.erroNotificacao = arguments.exception;
 		if ( arguments.exception.type EQ "InvalidHTTPMethod" ) {
 			throw( object = arguments.exception );
 		}

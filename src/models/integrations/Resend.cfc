@@ -12,6 +12,7 @@ component singleton {
 		cfhttp(
 			method  = "POST",
 			charset = "utf-8",
+			timeout = 10,
 			url     = application.resendUri,
 			result  = "local.resultado"
 		) {

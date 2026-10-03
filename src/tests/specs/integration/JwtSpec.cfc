@@ -2,7 +2,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 	function run() {
 		describe( "JWT exclusivamente em Authorization", function() {
 			beforeEach( function() {
-				setup();
+				setup(); prepareMock( getWireBox().getInstance( "ErroService" ) ).$( "notificar" );
 				variables.authJWT = prepareMock( getWireBox().getInstance( "security.JwtAuthenticationService" ) );
 				variables.usuarioServiceOriginal = variables.authJWT.$getProperty( "usuarioService", "variables" );
 				variables.usuario = new app.models.security.UsuarioAutenticado( { cd_usuario : 123, nm_usuario : "Teste JWT", tx_email : "jwt@example.invalid" } );

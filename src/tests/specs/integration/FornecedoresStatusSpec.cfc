@@ -1,7 +1,7 @@
 component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 	function run() {
 		describe( "Status e aprovação de fornecedores", function() {
-			beforeEach( function() { setup(); } );
+			beforeEach( function() { setup(); prepareMock( getWireBox().getInstance( "ErroService" ) ).$( "notificar" ); } );
 
 			it( "valida dados, categorias e identificadores antes da persistência", function() {
 				local.dto = novoDTO();
