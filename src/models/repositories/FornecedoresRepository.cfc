@@ -214,6 +214,25 @@ component singleton extends="BaseRepository" {
 		return local.id;
 	}
 
+	public boolean function addIndicacao( required struct dados ) {
+		transaction {
+			local.id = addFornecedor( arguments.dados );
+			queryExecute(
+				"INSERT INTO cmscondominio.tb_comentarios (cd_fornecedor, nr_apartamento, nm_nome, tx_conteudo, nr_nota)
+				VALUES (:fornecedor, :apartamento, :nome, :conteudo, :nota)",
+				{
+					fornecedor : { value : local.id, cfsqltype : "cf_sql_integer" },
+					apartamento : { value : arguments.dados.nrApartamento, cfsqltype : "cf_sql_integer" },
+					nome : { value : arguments.dados.nmNome, cfsqltype : "cf_sql_varchar" },
+					conteudo : { value : arguments.dados.txConteudo, cfsqltype : "cf_sql_varchar" },
+					nota : { value : arguments.dados.nrNota, cfsqltype : "cf_sql_integer" }
+				},
+				{ datasource : "cmscondominio" }
+			);
+		}
+		return true;
+	}
+
 	public array function listarAguardando() {
 		return variables.consulta(
 			"SELECT f.cd_fornecedor, f.nm_fornecedor, f.nm_empresa, f.nr_telefone, f.tx_instagram,

@@ -70,16 +70,7 @@ component singleton {
 
 
 	public boolean function postIndicacao( required IndicacaoDTO indicacaoDTO ) {
-		// Serializa o DTO para JSON
-		local.dtoJson = serializeJSON( arguments.indicacaoDTO );
-
-		// Monta corpo do e-mail
-		local.corpoEmail = {
-			"subject" : "Nova Indicação de Fornecedor",
-			"html"    : "<h1>Nova Indicação</h1><pre>#encodeForHTML( local.dtoJson )#</pre>"
-		};
-
-		return variables.resend.enviarEmail( corpoEmail = local.corpoEmail );
+		return variables.fornecedoresRepository.addIndicacao( arguments.indicacaoDTO.validar() );
 	}
 
 	public array function getComentariosPorFornecedor( required numeric cdFornecedor ) {

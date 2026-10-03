@@ -104,11 +104,11 @@ Depois, confira a URL alterada sem `fwreinit`. Os testes de integração inicial
 | GET / POST | `/categorias/:cdCategoria/editar` | Formulário e gravação do nome da categoria |
 | GET / POST | `/categorias/:cdCategoria/inativar` | Confirmação e inativação da categoria |
 | GET | `/api/fornecedores` | Dados da listagem |
-| POST | `/api/fornecedores/indicacao` | Envio de indicação por e-mail |
+| POST | `/api/fornecedores/indicacao` | Cadastro de indicação aguardando aprovação |
 | POST | `/api/fornecedores/:cdFornecedor/testemunho` | Envio de testemunho por e-mail |
 | GET | `/healthcheck` | Verificação de conexão com o banco |
 
-Os POSTs de indicação e testemunho recebem JSON convertido em `IndicacaoDTO` e `TestemunhoDTO`; o identificador do fornecedor no testemunho vem da rota. Consulte os DTOs e os formulários em `src/views/fornecedores/` para os campos utilizados. O sucesso do envio retorna um booleano; falhas na integração geram exceção.
+Os POSTs de indicação e testemunho recebem JSON convertido em `IndicacaoDTO` e `TestemunhoDTO`; o identificador do fornecedor no testemunho vem da rota. Consulte os DTOs e os formulários em `src/views/fornecedores/` para os campos utilizados. O sucesso retorna um booleano; falhas na persistência ou na integração geram exceção.
 
 O menu **Categorias de fornecedores** dá acesso ao gerenciamento, disponível apenas a usuários autenticados. A lista permite pesquisar, ordenar, paginar e filtrar a situação. A edição aceita nomes de 1 a 100 caracteres, removendo espaços nas extremidades, e mantém a situação atual. A inativação define `in_ativo = false`, preserva os vínculos existentes e retira a categoria das opções dos filtros e formulários. Categorias inativas continuam visíveis nos fornecedores já vinculados. Ambas as operações atualizam `ts_atualizado` via Quick, sem alterar `ts_criadoem`.
 
@@ -175,7 +175,7 @@ A entidade Quick `Fornecedor.statusId` mapeia `status_id`. `Fornecedor.status()`
 
 Cadastro, consulta das pendências, aprovação e exclusão exigem autenticação. Qualquer usuário autenticado pode acessar `/fornecedores/aprovacao` e aprovar ou excluir fornecedores com status **Aguardando**, sem permissão de administrador. O menu de aprovação aparece após o login. Os POSTs de cadastro, aprovação e exclusão verificam CSRF. A exclusão remove o fornecedor e seus vínculos em uma transação; fornecedores verificados ou inativos não podem ser excluídos por este fluxo.
 
-O formulário de indicação anterior foi preservado em `/fornecedores/indicar` e continua usando `POST /api/fornecedores/indicacao` para enviar e-mail, sem persistir o fornecedor. O cadastro em `/fornecedores/adicionar` grava no banco e não envia e-mail.
+O formulário de indicação anterior foi preservado em `/fornecedores/indicar` e continua usando `POST /api/fornecedores/indicacao` para gravar o fornecedor como **Aguardando** (aguardando aprovação), suas categorias e um comentário na mesma transação, sem enviar e-mail. O comentário usa `nrApartamento`, `nmIndicador` como `nmNome`, `txMotivo` como `txConteudo` e a nota (padrão 5). O cadastro em `/fornecedores/adicionar` grava no banco e não envia e-mail.
 
 Testes do fluxo:
 
@@ -220,7 +220,7 @@ categorias = getInstance( "Categoria" )
 vinculo = getInstance( "FornecedorCategoria" ).find( [ cdFornecedor, cdCategoria ] );
 ```
 
-Os campos de data conservam o comportamento do schema: `CURRENT_TIMESTAMP` como default no insert, sem atualização automática de `tsAtualizado`/`tsAtualizadoEm`. Não foram adicionados eventos de timestamp. Os fluxos de indicação e testemunho continuam enviando e-mail pelos services existentes.
+Os campos de data conservam o comportamento do schema: `CURRENT_TIMESTAMP` como default no insert, sem atualização automática de `tsAtualizado`/`tsAtualizadoEm`. Não foram adicionados eventos de timestamp. Indicações gravam fornecedor e comentário; testemunhos continuam enviando e-mail.
 
 `BaseEntidade` estende a entidade do Quick e informa a tipagem das duas chaves qualificadas da tabela de associação. Isso evita que o carregamento antecipado do Quick 12 envie IDs como `varchar` para comparação com colunas `integer` no PostgreSQL, sem modificar a dependência instalada.
 
@@ -241,7 +241,7 @@ A suíte TestBox está em `src/tests/specs/`, mas requer preparação antes de s
 - `src/tests/Application.cfc` usa os mappings `coldbox/` e `testbox/`, conforme `src/box.json`, e o datasource `cmscondominio`.
 - O ambiente dos testes precisa de configuração ou mocks para banco e bootstrap.
 - `MainSpec.cfc` ainda espera `welcomemessage = "Welcome to ColdBox!"`, ausente no handler atual, e contém outros casos do template.
-- Testes de indicação e testemunho devem simular o Resend para evitar envio real de mensagens.
+- Testes de testemunho devem simular o Resend para evitar envio real de mensagens.
 
 Depois de resolver os pré-requisitos do ambiente de testes:
 

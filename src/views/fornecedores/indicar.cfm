@@ -122,7 +122,8 @@
             const form = document.getElementById('formIndicacao');
             const btnEnviar = document.getElementById('btnEnviarIndicacao');
             
-            const modalAguarde = new bootstrap.Modal(document.getElementById('modalAguarde'));
+            const elementoAguarde = document.getElementById('modalAguarde');
+            const modalAguarde = new bootstrap.Modal(elementoAguarde);
             const modalSucesso = new bootstrap.Modal(document.getElementById('modalSucesso'));
 
             // Máscara Automática (+55 11 99999-9999)
@@ -172,7 +173,19 @@
                 const textoOriginalBotao = btnEnviar.innerHTML;
                 btnEnviar.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Enviando...`;
 
+                const modalAberto = new Promise(resolve => {
+                    elementoAguarde.addEventListener('shown.bs.modal', resolve, { once: true });
+                });
                 modalAguarde.show();
+
+                const fecharAguarde = async () => {
+                    await modalAberto;
+                    const modalFechado = new Promise(resolve => {
+                        elementoAguarde.addEventListener('hidden.bs.modal', resolve, { once: true });
+                    });
+                    modalAguarde.hide();
+                    await modalFechado;
+                };
 
                 try {
                     const response = await fetch('/api/fornecedores/indicacao', {
@@ -188,12 +201,12 @@
 
                     form.reset();
                     form.classList.remove('was-validated');
-                    modalAguarde.hide();
+                    await fecharAguarde();
                     modalSucesso.show();
 
                 } catch (error) {
                     console.error('Erro ao enviar indicação:', error);
-                    modalAguarde.hide();
+                    await fecharAguarde();
                     alert('Não foi possível enviar a indicação no momento. Tente novamente.');
                 } finally {
                     btnEnviar.disabled = false;
