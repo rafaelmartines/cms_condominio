@@ -39,9 +39,9 @@
                             <div>
                                 <cfset tags = listToArray( prc.fornecedor.categorias, "," )>
                                 <cfloop array="#tags#" index="tag">
-                                    <span class="badge bg-primary-subtle text-primary mb-2">#tag#</span>
+                                    <span class="badge bg-primary-subtle text-primary mb-2">#encodeForHTML( tag )#</span>
                                 </cfloop>
-                                <h3 class="fw-bold mb-1">#prc.fornecedor.nmFornecedor#</h3>
+                                <h3 class="fw-bold mb-1">#encodeForHTML( prc.fornecedor.nmFornecedor )#</h3>
                             </div>
                             
                             <cfset media = prc.media.media>
@@ -92,7 +92,7 @@
 
                             <!-- Instagram -->
                             <div class="col-6 col-sm-3">
-                                <a href="https://instagram.com/#prc.fornecedor.txInstagram#" target="_blank" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2">
+                                <a href="https://instagram.com/#encodeForURL( prc.fornecedor.txInstagram )#" target="_blank" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2">
                                     <i class="bi bi-instagram"></i> Instagram
                                 </a>
                             </div>

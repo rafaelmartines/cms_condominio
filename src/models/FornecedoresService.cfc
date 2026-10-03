@@ -41,7 +41,8 @@ component singleton {
 		};
 	}
 
-	public struct function getFornecedor( required numeric cdFornecedor ) {
+	public struct function getFornecedor( required any cdFornecedor ) {
+		validarId( arguments.cdFornecedor );
 		local.fornecedor = variables.fornecedoresRepository.getFornecedor( arguments.cdFornecedor );
 
 		return {
@@ -69,16 +70,7 @@ component singleton {
 
 
 	public boolean function postIndicacao( required IndicacaoDTO indicacaoDTO ) {
-		// Serializa o DTO para JSON
-		local.dtoJson = serializeJSON( arguments.indicacaoDTO );
-
-		// Monta corpo do e-mail
-		local.corpoEmail = {
-			"subject" : "Nova Indicação de Fornecedor",
-			"html"    : "<h1>Nova Indicação</h1><pre>#encodeForHTML( local.dtoJson )#</pre>"
-		};
-
-		return variables.resend.enviarEmail( corpoEmail = local.corpoEmail );
+		return variables.fornecedoresRepository.addIndicacao( arguments.indicacaoDTO.validar() );
 	}
 
 	public array function getComentariosPorFornecedor( required numeric cdFornecedor ) {
@@ -106,6 +98,38 @@ component singleton {
 		local.media = variables.fornecedoresRepository.getMedia( arguments.cdFornecedor );
 
 		return { "media" : local.media.MEDIA };
+	}
+
+	public numeric function addFornecedor( required any fornecedorDTO ) {
+		return variables.fornecedoresRepository.addFornecedor( arguments.fornecedorDTO.validar() );
+	}
+
+	public array function listarAguardando() {
+		return variables.fornecedoresRepository.listarAguardando();
+	}
+
+	public struct function listarFornecedores( required FornecedoresFiltroDTO fornecedoresFiltroDTO ) {
+		return getFornecedores( arguments.fornecedoresFiltroDTO );
+	}
+
+	public void function aprovarFornecedor( required any cdFornecedor ) {
+		validarId( arguments.cdFornecedor );
+		if ( NOT variables.fornecedoresRepository.aprovarFornecedor( arguments.cdFornecedor ) ) {
+			throw( type = "FornecedorNaoAguardando", message = "Fornecedor inexistente ou que não está mais aguardando aprovação." );
+		}
+	}
+
+	public void function excluirFornecedor( required any cdFornecedor ) {
+		validarId( arguments.cdFornecedor );
+		if ( NOT variables.fornecedoresRepository.excluirFornecedor( arguments.cdFornecedor ) ) {
+			throw( type = "FornecedorNaoAguardando", message = "Fornecedor inexistente ou que não está mais aguardando aprovação." );
+		}
+	}
+
+	private void function validarId( required any id ) {
+		if ( NOT isSimpleValue( arguments.id ) OR NOT reFind( "^[1-9][0-9]{0,9}$", arguments.id ) OR arguments.id GT 2147483647 ) {
+			throw( type = "FornecedorInvalido", message = "Identificador de fornecedor inválido." );
+		}
 	}
 
 }

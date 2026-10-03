@@ -19,7 +19,7 @@
                         <select class="form-select" id="filtroCategoria">
                             <option value="" selected>Todas as categorias</option>
                             <cfloop array="#prc.categorias#" index="categoria">
-                                <option value="#categoria.cdCategoria#">#categoria.txCategoria#</option>
+                                <option value="#categoria.cdCategoria#">#encodeForHTML( categoria.txCategoria )#</option>
                             </cfloop>
                         </select>
                     </div>
@@ -72,8 +72,8 @@
                 },
                 searching: false, // REMOVE o campo de pesquisa padrão do DataTables
                 columns: [
-                    { data: 'nmFornecedor' },
-                    { data: 'categorias' },
+                    { data: 'nmFornecedor', render: DataTable.render.text() },
+                    { data: 'categorias', render: DataTable.render.text() },
                     { data: 'html', orderable: false, searchable: false }
                 ],
                 columnDefs: [

@@ -99,7 +99,19 @@
                 <!-- Links do Menu -->
                 <div class="list-group list-group-flush">
                     <a href="/" class="list-group-item list-group-item-action active py-3"><i class="bi bi-house-door me-3"></i>Início</a>
-                    <a href="/fornecedores/adicionar" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3"></i>Indicar Novo Fornecedor</a>
+                    <a href="/fornecedores/indicar" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3"></i>Indicar Novo Fornecedor</a>
+                    <cfif auth().isLoggedIn()>
+                        <a href="/fornecedores/adicionar" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3" aria-hidden="true"></i>Cadastrar fornecedor</a>
+                        <a href="/fornecedores/aprovacao" class="list-group-item list-group-item-action py-3"><i class="bi bi-check-circle me-3" aria-hidden="true"></i>Aprovação de fornecedores</a>
+                    <a href="/categorias" class="list-group-item list-group-item-action py-3"><i class="bi bi-tags me-3"></i>Categorias de fornecedores</a>
+                        <a href="/cadastro" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3"></i>Cadastrar usuário</a>
+                        <form method="post" action="/logout">
+                            <input type="hidden" name="csrfToken" value="#encodeForHTMLAttribute( csrfGenerateToken( 'autenticacao' ) )#">
+                            <button type="submit" class="list-group-item list-group-item-action py-3 w-100"><i class="bi bi-box-arrow-right me-3"></i>Sair</button>
+                        </form>
+                    <cfelse>
+                        <a href="/login" class="list-group-item list-group-item-action py-3"><i class="bi bi-box-arrow-in-right me-3"></i>Entrar</a>
+                    </cfif>
                     <a href="https://uclass.com.br/bn/vbstar/" target="_blank" class="list-group-item list-group-item-action py-3"><i class="bi bi-box-arrow-up-right me-3"></i>Manual do Proprietário</a>
                 </div>
             </div>
