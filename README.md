@@ -112,7 +112,7 @@ Os POSTs de indicação e testemunho recebem JSON convertido em `IndicacaoDTO` e
 
 O menu **Categorias de fornecedores** dá acesso ao gerenciamento, disponível apenas a usuários autenticados. A lista permite pesquisar, ordenar, paginar e filtrar a situação. A edição aceita nomes de 1 a 100 caracteres, removendo espaços nas extremidades, e mantém a situação atual. A inativação define `in_ativo = false`, preserva os vínculos existentes e retira a categoria das opções dos filtros e formulários. Categorias inativas continuam visíveis nos fornecedores já vinculados. Ambas as operações atualizam `ts_atualizado` via Quick, sem alterar `ts_criadoem`.
 
-Os formulários de categorias enviam POST com token CSRF vinculado à sessão. GET não grava dados. Entradas inválidas retornam 422, categoria inexistente retorna 404 e token inválido retorna 403. Após sucesso, há redirecionamento para a lista e mensagem de confirmação. A criação gera uma categoria ativa; não há exclusão ou reativação nesta funcionalidade.
+Os formulários de categorias enviam POST com JWT no header Authorization. GET não grava dados. Entradas inválidas retornam 422, categoria inexistente retorna 404 e autenticação inválida retorna 401. Após sucesso, há redirecionamento para a lista e mensagem de confirmação. A criação gera uma categoria ativa; não há exclusão ou reativação nesta funcionalidade.
 
 A listagem recebe `filtroNome`, `filtroCategoria`, `start`, `length`, `order[0][column]` e `order[0][dir]`, retornando `data`, `recordsTotal` e `recordsFiltered`. A paginação atual reduz os resultados em memória com `cbpaginator`. Hoje os dois totais usam a contagem filtrada e não há `draw` na resposta. A coluna de categorias também diverge do DTO de ordenação, que a mapeia para empresa; esses pontos exigem revisão conjunta da interface e do backend quando o contrato for alterado.
 
@@ -120,9 +120,13 @@ A listagem recebe `filtroNome`, `filtroCategoria`, `start`, `length`, `order[0][
 
 ## Login e cadastro de usuários
 
-O cbSecurity 3.8 usa o cbAuth com autenticação por sessão. O handler `Categorias` tem `secured="true"`; visitantes são redirecionados para `/login`, inclusive nas rotas de gravação. O cadastro (`GET/POST /cadastro`) também exige autenticação. Qualquer usuário autenticado pode gerenciar categorias e cadastrar outros usuários; a aprovação de fornecedores exige a permissão administrativa descrita abaixo. O menu apresenta **Entrar** para visitantes e **Cadastrar usuário** e **Sair** para usuários autenticados.
+O cbSecurity 3.8 usa `security.JwtAuthenticationService`, que autentica exclusivamente por `Authorization: Bearer <token>`. Cookies, sessão, corpo e parâmetros de URL não substituem esse header. As rotas com `secured="true"` verificam assinatura HS256, emissor, expiração, revogação e existência do usuário; refresh tokens não autorizam páginas protegidas. Qualquer usuário autenticado pode gerenciar categorias e cadastrar outros usuários. Os requisitos de fornecedores estão descritos abaixo.
 
-O login usa e-mail e senha. As senhas têm de 12 a 128 caracteres e são armazenadas como PBKDF2-HMAC-SHA256 com salt aleatório e 600.000 iterações, nunca em texto puro. O login renova a sessão; `POST /logout` exige CSRF e invalida a sessão. Cadastro e login também verificam CSRF. O e-mail é normalizado para minúsculas e tem restrição única no banco. O DTO `UsuarioDTO` concentra as constraints e os perfis `cadastro` e `login`.
+`POST /login` recebe JSON com `txEmail` (usuário) e `txSenha`. Após validar as credenciais, retorna `access_token`, `refresh_token`, `token_type`, `expires_at` e `refresh_expires_at`; os prazos são timestamps Unix em segundos. Não exige nem devolve `csrf_token`. As senhas têm de 12 a 128 caracteres e são armazenadas como PBKDF2-HMAC-SHA256 com salt aleatório e 600.000 iterações. O e-mail é normalizado para minúsculas e tem restrição única no banco. O DTO `UsuarioDTO` concentra as constraints.
+
+A interface armazena o par no `localStorage` em `cms.jwt` e envia o acesso em `Authorization` nas chamadas de mesma origem. `fetch`, chamadas jQuery/DataTables e formulários usam esse fluxo; requests externos não recebem o JWT. O storage anterior (`cms.access_token`) e os cookies antigos não autenticam a aplicação: faça novo login após atualizar. O armazenamento local é acessível aos scripts da mesma origem; mantenha somente scripts confiáveis e codifique conteúdo dinâmico.
+
+As páginas continuam sendo renderizadas por CFML. A navegação autenticada carrega HTML com `fetch` e Bearer, atualiza o histórico e executa os scripts de página. Abrir uma rota protegida diretamente ou recarregá-la entrega somente uma tela de espera pública; o JavaScript busca o conteúdo com o token do storage. Sem token, direciona para `/login`. O handler protegido não executa durante essa resposta inicial. Chamadas sem Bearer ou com token inválido recebem 401. A sessão permanece somente para mensagens flash, sem identidade de autenticação. Formulários protegidos não contêm nem verificam CSRF, pois cookies não concedem acesso.
 
 Antes do primeiro uso, aplique o SQL no PostgreSQL do datasource. Configure `PGHOST`, `PGPORT`, `PGDATABASE` e `PGUSER`; forneça a senha pelo mecanismo seguro do `psql` (por exemplo, `.pgpass` com permissões restritas). Na raiz:
 
@@ -131,17 +135,27 @@ psql -X -v ON_ERROR_STOP=1 -f database/001_usuarios.sql
 python3 scripts/criar_usuario_inicial.py | psql -X -v ON_ERROR_STOP=1
 ```
 
-O segundo comando solicita nome, e-mail e senha no terminal, gera o hash e insere a primeira conta somente se a tabela estiver vazia, sob bloqueio transacional. Requer Python 3 e `psql`; não grava arquivos com senhas. Depois, entre em `/login` e use `/cadastro` para novas contas. O cadastro não troca a sessão de quem cadastrou. A instalação e os testes não criam uma conta padrão. Em produção, sirva a aplicação por HTTPS.
+O segundo comando solicita nome, e-mail e senha no terminal, gera o hash e insere a primeira conta somente se a tabela estiver vazia, sob bloqueio transacional. Requer Python 3 e `psql`; não grava arquivos com senhas. Depois, entre em `/login` e use `/cadastro` para novas contas. O cadastro mantém o JWT de quem cadastrou. A instalação e os testes não criam uma conta padrão. Em produção, sirva a aplicação por HTTPS.
 
-As configurações ficam em `src/config/modules/cbauth.cfc` e `cbsecurity.cfc`. `security.AnotacaoAuthValidator` adapta o valor booleano `secured=true` ao validador do cbSecurity 3.8, que o recebe como uma permissão textual; permissões explícitas continuam sendo delegadas ao validador original. Dependências instaladas não foram modificadas.
+Configure `JWT_SECRET` com pelo menos 32 caracteres aleatórios no ambiente do processo (o Compose repassa a variável). Fora de `ENVIRONMENT=development`, o segredo é obrigatório; em desenvolvimento, se vazio, o cbSecurity gera uma chave temporária. Nunca versione o valor. Use HTTPS em produção. Depois de alterar variáveis no `.env`, recrie o serviço com `podman compose up -d`.
+
+O acesso dura 15 minutos. `POST /autenticacao/renovar` recebe o **refresh token em `Authorization: Bearer`**, sem CSRF ou cookie, e retorna um novo par. A rotação revoga o acesso e o refresh anteriores e mantém o prazo absoluto de 7 dias desde o login. A interface tenta renovar 30 segundos antes da expiração, antes de chamadas com acesso expirado e uma vez após receber 401. Web Locks coordena a renovação entre abas quando disponível. `GET /autenticacao/token` valida o acesso enviado no header e retorna `{"autenticado":true}`; não recupera tokens de cookies.
+
+`POST /logout` recebe um JWT válido no header (a interface envia o refresh para permitir logout com acesso expirado) e revoga o par atual. A interface remove `cms.jwt` após sucesso ou após 401, quando o servidor já não aceita esse token. Falhas de rede preservam os dados para tentar novamente.
+
+Os tokens e seus registros de revogação usam CacheBox em memória. Reiniciar/reinicializar a aplicação ou perder entradas do cache exige novo login. O armazenamento e o bloqueio de rotação atendem uma instância; múltiplas instâncias exigem armazenamento compartilhado e rotação atômica nesse armazenamento.
+
+As configurações JWT ficam em `src/config/modules/cbsecurity.cfc` e `src/config/Coldbox.cfc`. `cbauth.cfc` permanece como configuração do módulo instalado, mas não fornece a autenticação da aplicação. `security.AnotacaoAuthValidator` adapta o valor booleano `secured=true` ao validador do cbSecurity 3.8, que o recebe como uma permissão textual; permissões explícitas continuam sendo delegadas ao validador original. Dependências instaladas não foram modificadas.
 
 Teste os fluxos com o banco preparado:
 
 ```sh
-curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.specs.integration.AutenticacaoSpec,tests.specs.integration.CategoriasSpec'
+curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.specs.integration.JwtSpec,tests.specs.integration.AutenticacaoSpec,tests.specs.integration.CategoriasSpec,tests.specs.integration.FornecedoresStatusSpec'
 ```
 
-Os usuários criados pelos testes são revertidos por transação. A suíte de categorias simula uma sessão autenticada; a suíte de autenticação exercita o firewall, cadastro, credenciais, sessão e logout reais.
+Os usuários criados pelos testes são revertidos por transação. A suíte de categorias simula o serviço de autenticação; a suíte de autenticação exercita o firewall, cadastro, credenciais, JWT e logout reais. `JwtSpec` simula usuários sem consultar o banco e cobre assinatura, emissor, Bearer, rejeição de cookies/URL, expiração, separação entre acesso e renovação, rotação, reutilização e revogação.
+
+Referências JWT: [serviço JWT do cbSecurity](https://coldbox-security.ortusbooks.com/v2.x-3/jwt/jwt-services), [renovação de tokens](https://coldbox-security.ortusbooks.com/v2.x-3/jwt/refresh-tokens), [headers de requisição no Lucee 6](https://docs.lucee.org/reference/functions/gethttprequestdata.html) e [renderização JSON no ColdBox 8](https://coldbox.ortusbooks.com/the-basics/event-handlers/rendering-data).
 
 Referências: [autenticação no cbSecurity](https://coldbox-security.ortusbooks.com/getting-started/configuration/authentication), [GeneratePBKDFKey no Lucee](https://docs.lucee.org/reference/functions/generatepbkdfkey.html) e [armazenamento de senhas na OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
 
@@ -173,7 +187,7 @@ A entidade Quick `Fornecedor.statusId` mapeia `status_id`. `Fornecedor.status()`
 
 `FornecedoresService.addFornecedor()` valida os dados e grava o fornecedor como Aguardando junto com suas categorias ativas, em uma transação. O formulário não aceita status fornecido pelo cliente. `aprovarFornecedor()` faz uma atualização condicional de Aguardando para Verificado; tentativas repetidas, registros inativos ou inexistentes não são aprovados. `listarFornecedores()` preserva o contrato DataTables e retorna apenas verificados. A tela de aprovação mostra os dados para conferência e oferece as ações **Aprovar** e **Excluir**. Não há tela de inativação neste fluxo.
 
-Cadastro, consulta das pendências, aprovação e exclusão exigem autenticação. Qualquer usuário autenticado pode acessar `/fornecedores/aprovacao` e aprovar ou excluir fornecedores com status **Aguardando**, sem permissão de administrador. O menu de aprovação aparece após o login. Os POSTs de cadastro, aprovação e exclusão verificam CSRF. A exclusão remove o fornecedor e seus vínculos em uma transação; fornecedores verificados ou inativos não podem ser excluídos por este fluxo.
+Cadastro, consulta das pendências, aprovação e exclusão exigem autenticação. Qualquer usuário autenticado pode acessar `/fornecedores/aprovacao` e aprovar ou excluir fornecedores com status **Aguardando**, sem permissão de administrador. O menu de aprovação aparece após o login. Os POSTs de cadastro, aprovação e exclusão exigem JWT de acesso válido no header Authorization, sem CSRF. A exclusão remove o fornecedor e seus vínculos em uma transação; fornecedores verificados ou inativos não podem ser excluídos por este fluxo.
 
 O formulário de indicação anterior foi preservado em `/fornecedores/indicar` e continua usando `POST /api/fornecedores/indicacao` para gravar o fornecedor como **Aguardando** (aguardando aprovação), suas categorias e um comentário na mesma transação, sem enviar e-mail. O comentário usa `nrApartamento`, `nmIndicador` como `nmNome`, `txMotivo` como `txConteudo` e a nota (padrão 5). O cadastro em `/fornecedores/adicionar` grava no banco e não envia e-mail.
 
@@ -185,7 +199,7 @@ curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.s
 
 Os testes exercitam persistência e relacionamento de status, filtros por categoria, visibilidade, CSRF, login, permissão administrativa, revogação e tentativa de envio de status pelo cliente. Os registros temporários são revertidos por transação; sequences podem avançar. Não há envio de e-mail. A busca por nome requer a extensão configurada por `database/003_unaccent.sql`.
 
-Referências de implementação: [handlers no ColdBox 8](https://coldbox.ortusbooks.com/the-basics/event-handlers), [QueryExecute no Lucee](https://docs.lucee.org/reference/functions/queryexecute.html), [transações no Lucee](https://docs.lucee.org/reference/tags/transaction.html) e [CSRFVerifyToken](https://docs.lucee.org/reference/functions/csrfverifytoken.html), compatíveis com o runtime Lucee 6 do projeto.
+Referências de implementação: [handlers no ColdBox 8](https://coldbox.ortusbooks.com/the-basics/event-handlers), [QueryExecute no Lucee](https://docs.lucee.org/reference/functions/queryexecute.html), [transações no Lucee](https://docs.lucee.org/reference/tags/transaction.html), compatíveis com o runtime Lucee 6 do projeto.
 
 ## Models Quick ORM
 

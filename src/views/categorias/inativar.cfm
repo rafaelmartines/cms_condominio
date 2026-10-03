@@ -8,7 +8,6 @@
 					<p>Deseja inativar <strong>#encodeForHTML( prc.categoria.txCategoria )#</strong>?</p>
 					<p class="text-body-secondary">Ela deixará de aparecer nas opções dos formulários e filtros. Os vínculos existentes com fornecedores serão preservados.</p>
 					<form method="post" action="/categorias/#prc.categoria.cdCategoria#/inativar" class="d-flex flex-wrap gap-2">
-						<input type="hidden" name="csrfToken" value="#encodeForHTMLAttribute( prc.csrfToken )#">
 						<button type="submit" class="btn btn-danger">Confirmar inativação</button>
 						<a href="/categorias" class="btn btn-outline-secondary">Cancelar</a>
 					</form>

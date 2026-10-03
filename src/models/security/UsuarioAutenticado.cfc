@@ -1,4 +1,4 @@
-component accessors="true" implements="cbsecurity.interfaces.IAuthUser" {
+component accessors="true" implements="cbsecurity.interfaces.IAuthUser,cbsecurity.interfaces.jwt.IJwtSubject" {
 
 	property name="cdUsuario";
 	property name="nmUsuario";
@@ -14,6 +14,14 @@ component accessors="true" implements="cbsecurity.interfaces.IAuthUser" {
 
 	public any function getId() {
 		return variables.cdUsuario;
+	}
+
+	public array function getJwtScopes() {
+		return [];
+	}
+
+	public struct function getJwtCustomClaims( required struct payload ) {
+		return {};
 	}
 
 	public boolean function hasPermission( required permission ) {

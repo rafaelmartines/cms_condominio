@@ -19,7 +19,6 @@ component extends="coldbox.system.EventHandler" secured="true" {
 	}
 
 	public void function criar( event, rc, prc ) {
-		if ( NOT validarToken( event, rc, prc ) ) return;
 		prc.categoria = { txCategoria : "" };
 		local.formulario = popularValidarDTO( "criar" );
 		variables.categoriaService.criarCategoria( local.formulario.getTxCategoria() );
@@ -37,12 +36,10 @@ component extends="coldbox.system.EventHandler" secured="true" {
 		local.identificador = populateModel( model = "CategoriaDTO", include = "cdCategoria" );
 		prc.categoria = variables.categoriaService.obterCategoria( local.identificador.getCdCategoria() );
 		prc.titulo = "Inativar categoria";
-		prc.csrfToken = csrfGenerateToken( "categorias" );
 		event.setView( "categorias/inativar" );
 	}
 
 	public void function salvar( event, rc, prc ) {
-		if ( NOT validarToken( event, rc, prc ) ) return;
 		local.categoriaDTO = populateModel( model = "CategoriaDTO", include = "cdCategoria,txCategoria" );
 		prc.categoria = variables.categoriaService.obterCategoria( local.categoriaDTO.getCdCategoria() );
 		validarCategoriaDTO( local.categoriaDTO, "editar" );
@@ -52,7 +49,6 @@ component extends="coldbox.system.EventHandler" secured="true" {
 	}
 
 	public void function inativar( event, rc, prc ) {
-		if ( NOT validarToken( event, rc, prc ) ) return;
 		local.identificador = populateModel( model = "CategoriaDTO", include = "cdCategoria" );
 		variables.categoriaService.inativarCategoria( local.identificador.getCdCategoria() );
 		flash.put( "categoriasMensagem", "Categoria inativada com sucesso." );
@@ -93,20 +89,10 @@ component extends="coldbox.system.EventHandler" secured="true" {
 
 	private void function prepararFormulario( required any event, required struct prc, boolean nova = false ) {
 		arguments.prc.titulo = arguments.nova ? "Nova categoria" : "Editar categoria";
-		arguments.prc.csrfToken = csrfGenerateToken( "categorias" );
 		param arguments.prc.erroNome = "";
 		arguments.event.setView( arguments.nova ? "categorias/adicionar" : "categorias/editar" );
 	}
 
-	private boolean function validarToken( required any event, required struct rc, required struct prc ) {
-		local.token = arguments.rc.csrfToken ?: "";
-		if ( isSimpleValue( local.token ) AND len( local.token ) AND csrfVerifyToken( local.token, "categorias" ) ) return true;
-		arguments.event.setHTTPHeader( statusCode = 403 );
-		arguments.prc.titulo = "Não foi possível concluir";
-		arguments.prc.erro = "O formulário expirou ou é inválido. Volte à lista e tente novamente.";
-		arguments.event.setView( "categorias/erro" );
-		return false;
-	}
 
 	private void function exibirErro( required any event, required struct prc, required any erro ) {
 		local.status = 500;

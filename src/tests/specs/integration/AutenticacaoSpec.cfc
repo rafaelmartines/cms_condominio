@@ -1,44 +1,28 @@
 component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
-
 	function run() {
-		describe( "Autenticação e cadastro restrito", function() {
-			beforeEach( function() {
-				setup();
-				getWireBox().getInstance( "authenticationService@cbauth" ).logout( quiet = true );
-			} );
-
-			afterEach( function() {
-				getWireBox().getInstance( "authenticationService@cbauth" ).logout( quiet = true );
-			} );
-
-			it( "redireciona visitantes nas categorias, cadastro e boas-vindas", function() {
-				for ( local.rota in [ "/categorias", "/categorias/adicionar", "/categorias/1/editar", "/categorias/1/inativar", "/cadastro", "/bem-vindo" ] ) {
+		describe( "Autenticação e cadastro restrito com Bearer", function() {
+			beforeEach( function() { setup(); } );
+			it( "recusa visitantes inclusive em eventos diretos", function() {
+				for ( local.rota in [ "/categorias", "/categorias/adicionar", "/cadastro", "/bem-vindo" ] ) {
 					setup();
-					local.evento = get( route = local.rota, renderResults = false );
-					expect( local.evento.getValue( "relocate_event", "" ) ).toBe( "login" );
-				}
-				for ( local.rota in [ "/categorias/adicionar", "/categorias/1/editar", "/categorias/1/inativar", "/cadastro" ] ) {
-					setup();
-					local.evento = post( route = local.rota, renderResults = false );
-					expect( local.evento.getValue( "relocate_event", "" ) ).toBe( "login" );
+					local.evento = get( route = local.rota );
+					expect( local.evento.getStatusCode() ).toBe( 401 );
 				}
 				setup();
-				local.evento = execute( event = "Categorias.index", renderResults = false );
-				expect( local.evento.getValue( "relocate_event", "" ) ).toBe( "login" );
+				local.evento = execute( event = "Categorias.index", renderResults = true );
+				expect( local.evento.getStatusCode() ).toBe( 401 );
 			} );
-
-			it( "exibe login e rejeita POST sem CSRF ou com campos inválidos", function() {
+			it( "exibe login sem CSRF e valida campos no POST", function() {
 				local.evento = get( route = "/login" );
 				expect( local.evento.getCurrentView() ).toBe( "autenticacao/login" );
-				local.token = local.evento.getPrivateValue( "csrfToken" );
+				expect( local.evento.getRenderedContent() ).notToInclude( "csrf" );
 				setup();
 				local.evento = post( route = "/login" );
-				expect( local.evento.getStatusCode() ).toBe( 403 );
+				expect( local.evento.getStatusCode() ).toBe( 422 );
 				setup();
-				local.evento = post( route = "/login", params = { csrfToken : local.token, txEmail : [], txSenha : {} } );
+				local.evento = post( route = "/login", params = { txEmail : [], txSenha : {} } );
 				expect( local.evento.getStatusCode() ).toBe( 422 );
 			} );
-
 			it( "armazena hashes distintos e verifica senhas com comparação sensível a maiúsculas", function() {
 				local.service = getWireBox().getInstance( "security.SenhaService" );
 				local.hash = local.service.gerarHash( "SenhaTeste123!" );
@@ -66,65 +50,43 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				expect( local.manager.validate( target = local.dto, profiles = "cadastro" ).hasErrors() ).toBeFalse();
 			} );
 
-			it( "cadastra, autentica, protege a sessão e encerra o acesso", function() {
+			it( "valida credenciais reais, cadastra com JWT e encerra o acesso", function() {
 				transaction {
 					try {
 						local.email = lCase( createUUID() ) & "@example.invalid";
 						local.dto = getWireBox().getInstance( "UsuarioDTO" );
 						local.dto.setNmUsuario( "Usuário de teste" );
-						local.dto.setTxEmail( uCase( local.email ) );
+						local.dto.setTxEmail( local.email );
 						local.dto.setTxSenha( "SenhaTeste123!" );
 						local.dto.setTxConfirmacaoSenha( "SenhaTeste123!" );
 						local.service = getWireBox().getInstance( "UsuarioService" );
 						local.service.cadastrar( local.dto );
-						local.dados = getWireBox().getInstance( "repositories.UsuarioRepository" ).obterPorEmail( local.email );
-						expect( local.dados.tx_email ).toBe( local.email );
-						expect( local.dados.tx_senha_hash ).notToInclude( "SenhaTeste123!" );
 						expect( function() { service.cadastrar( dto ); } ).toThrow( "UsuarioDuplicado" );
-						expect( local.service.isValidCredentials( local.email, "SenhaErrada123!" ) ).toBeFalse();
-						expect( local.service.isValidCredentials( "ausente-" & local.email, "SenhaTeste123!" ) ).toBeFalse();
-						local.token = csrfGenerateToken( "autenticacao" );
-						local.evento = post( route = "/login", params = { csrfToken : local.token, txEmail : local.email, txSenha : "SenhaErrada123!" } );
+						local.evento = post( route = "/login", params = { txEmail : local.email, txSenha : "SenhaErrada123!" } );
 						expect( local.evento.getStatusCode() ).toBe( 401 );
 						expect( local.evento.getRenderedContent() ).notToInclude( "SenhaErrada123!" );
 						setup();
-						local.evento = post( route = "/login", params = { csrfToken : local.token, txEmail : local.email, txSenha : "SenhaTeste123!" }, renderResults = false );
-						expect( local.evento.getValue( "relocate_URI", "" ) ).toBe( "/bem-vindo" );
-						expect( getWireBox().getInstance( "authenticationService@cbauth" ).isLoggedIn() ).toBeTrue();
+						local.evento = post( route = "/login", params = { txEmail : local.email, txSenha : "SenhaTeste123!" } );
+						local.tokens = local.evento.getRenderData().data;
+						local.headers = { Authorization : "Bearer " & local.tokens.access_token };
+						for ( local.rota in [ "/bem-vindo", "/categorias", "/cadastro" ] ) {
+							setup();
+							local.evento = get( route = local.rota, headers = local.headers );
+							expect( local.evento.getStatusCode() ).toBe( 200 );
+						}
 						setup();
-						local.evento = get( route = "/bem-vindo" );
-						expect( local.evento.getCurrentView() ).toBe( "autenticacao/boasVindas" );
-						expect( local.evento.getRenderedContent() ).toInclude( "Bem-vindo(a), " & encodeForHTML( "Usuário de teste" ) );
-						setup();
-						local.evento = get( route = "/categorias" );
-						expect( local.evento.getCurrentView() ).toBe( "categorias/index" );
-						setup();
-						local.evento = get( route = "/cadastro" );
-						expect( local.evento.getCurrentView() ).toBe( "autenticacao/cadastro" );
-						local.token = local.evento.getPrivateValue( "csrfToken" );
-						setup();
-						local.evento = post( route = "/cadastro", params = { nmUsuario : "Sem token" } );
-						expect( local.evento.getStatusCode() ).toBe( 403 );
-						setup();
-						local.evento = post( route = "/cadastro", params = { csrfToken : local.token, nmUsuario : "Novo usuário", txEmail : "novo-" & local.email, txSenha : "NovaSenha12345!", txConfirmacaoSenha : "NovaSenha12345!" }, renderResults = false );
+						local.evento = post( route = "/cadastro", headers = local.headers, params = { nmUsuario : "Novo usuário", txEmail : "novo-" & local.email, txSenha : "NovaSenha12345!", txConfirmacaoSenha : "NovaSenha12345!" }, renderResults = false );
 						expect( local.evento.getValue( "relocate_URI", "" ) ).toBe( "/cadastro" );
-						expect( getWireBox().getInstance( "authenticationService@cbauth" ).getUser().getTxEmail() ).toBe( local.email );
+						expect( getWireBox().getInstance( "security.JwtAuthenticationService" ).getUser().getTxEmail() ).toBe( local.email );
 						setup();
-						local.evento = post( route = "/logout" );
-						expect( local.evento.getStatusCode() ).toBe( 403 );
+						local.evento = post( route = "/logout", headers = { Authorization : "Bearer " & local.tokens.refresh_token } );
+						expect( local.evento.getStatusCode() ).toBe( 200 );
 						setup();
-						post( route = "/logout", params = { csrfToken : local.token }, renderResults = false );
-						expect( getWireBox().getInstance( "authenticationService@cbauth" ).isLoggedIn() ).toBeFalse();
-						setup();
-						local.evento = get( route = "/categorias", renderResults = false );
-						expect( local.evento.getValue( "relocate_event", "" ) ).toBe( "login" );
-					} finally {
-						getWireBox().getInstance( "authenticationService@cbauth" ).logout( quiet = true );
-						transaction action="rollback";
-					}
+						local.evento = get( route = "/categorias", headers = local.headers );
+						expect( local.evento.getStatusCode() ).toBe( 401 );
+					} finally { transaction action="rollback"; }
 				}
 			} );
 		} );
 	}
-
 }

@@ -6,7 +6,6 @@
 				<cfif len( prc.mensagem )><div class="alert alert-success" role="status">#encodeForHTML( prc.mensagem )#</div></cfif>
 				<cfif len( prc.erro )><div class="alert alert-danger" role="alert">#encodeForHTML( prc.erro )#</div></cfif>
 				<form method="post" action="/cadastro">
-					<input type="hidden" name="csrfToken" value="#encodeForHTMLAttribute( prc.csrfToken )#">
 					<div class="mb-3">
 						<label for="nmUsuario" class="form-label">Nome</label>
 						<input id="nmUsuario" name="nmUsuario" type="text" class="form-control" autocomplete="name" maxlength="100" value="#encodeForHTMLAttribute( prc.dados.nmUsuario )#" required>

@@ -34,6 +34,8 @@ component {
 		route( "/cadastro" ).withHandler( "Autenticacao" ).toAction( { GET : "cadastro", POST : "criar" } );
 		get( "/bem-vindo", "Autenticacao.boasVindas" );
 		post( "/logout", "Autenticacao.sair" );
+		post( "/autenticacao/renovar", "Autenticacao.renovar" );
+		get( "/autenticacao/token", "Autenticacao.token" );
 		route( "/categorias/adicionar" ).withHandler( "Categorias" ).toAction( { GET : "adicionar", POST : "criar" } );
 		route( "/categorias/:cdCategoria/editar" ).withHandler( "Categorias" ).toAction( { GET : "editar", POST : "salvar" } );
 		route( "/categorias/:cdCategoria/inativar" ).withHandler( "Categorias" ).toAction( { GET : "confirmarInativacao", POST : "inativar" } );

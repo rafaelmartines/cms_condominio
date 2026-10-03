@@ -20,11 +20,9 @@
 				</dl>
 				<div class="d-flex flex-wrap gap-2">
 				<form method="post" action="/fornecedores/#fornecedor.cd_fornecedor#/aprovar">
-					<input type="hidden" name="csrfToken" value="#encodeForHTMLAttribute( prc.csrfToken )#">
 					<button class="btn btn-success" type="submit"><i class="bi bi-check-circle me-2" aria-hidden="true"></i>Aprovar</button>
 				</form>
 				<form method="post" action="/fornecedores/#fornecedor.cd_fornecedor#/excluir">
-					<input type="hidden" name="csrfToken" value="#encodeForHTMLAttribute( prc.csrfToken )#">
 					<button class="btn btn-outline-danger" type="submit" aria-label="Excluir #encodeForHTMLAttribute( fornecedor.nm_fornecedor )#"><i class="bi bi-trash me-2" aria-hidden="true"></i>Excluir</button>
 				</form>
 				</div>

@@ -5,7 +5,6 @@
 			<div class="card-header py-3 bg-body-secondary"><h1 class="h5 mb-0">Nova categoria</h1></div>
 			<div class="card-body">
 				<form method="post" action="/categorias/adicionar">
-					<input type="hidden" name="csrfToken" value="#encodeForHTMLAttribute( prc.csrfToken )#">
 					<div class="mb-4">
 						<label for="txCategoria" class="form-label">Nome da categoria</label>
 						<input type="text" name="txCategoria" id="txCategoria" class="form-control #len( prc.erroNome ) ? 'is-invalid' : ''#" value="#encodeForHTMLAttribute( prc.categoria.txCategoria )#" maxlength="100" required aria-describedby="ajudaNome erroNome" aria-invalid="#len( prc.erroNome ) ? 'true' : 'false'#">

@@ -7,7 +7,6 @@
 				<p>Situação: <strong>#prc.categoria.inAtivo ? 'Ativa' : 'Inativa'#</strong></p>
 				<cfif !prc.categoria.inAtivo><p class="text-body-secondary">Editar o nome não reativa esta categoria.</p></cfif>
 				<form method="post" action="/categorias/#prc.categoria.cdCategoria#/editar">
-					<input type="hidden" name="csrfToken" value="#encodeForHTMLAttribute( prc.csrfToken )#">
 					<div class="mb-4">
 						<label for="txCategoria" class="form-label">Nome da categoria</label>
 						<input type="text" name="txCategoria" id="txCategoria" class="form-control #len( prc.erroNome ) ? 'is-invalid' : ''#" value="#encodeForHTMLAttribute( prc.categoria.txCategoria )#" maxlength="100" required aria-describedby="ajudaNome erroNome" aria-invalid="#len( prc.erroNome ) ? 'true' : 'false'#">

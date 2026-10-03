@@ -24,7 +24,6 @@ component extends="coldbox.system.EventHandler" {
 	}
 
 	public void function criar( event, rc, prc ) secured="true" {
-		if ( NOT validarToken( arguments.event, arguments.rc, arguments.prc ) ) return;
 		local.dto = populateModel( model = "FornecedorDTO", include = "nmFornecedor,nmEmpresa,nrTelefone,txInstagram,categorias" );
 		getInstance( "FornecedoresService" ).addFornecedor( local.dto );
 		flash.put( "fornecedoresMensagem", "Fornecedor cadastrado. Aguarde a aprovação." );
@@ -34,20 +33,17 @@ component extends="coldbox.system.EventHandler" {
 	public void function aprovacao( event, rc, prc ) secured="true" {
 		arguments.prc.titulo = "Aprovação de fornecedores";
 		arguments.prc.fornecedores = getInstance( "FornecedoresService" ).listarAguardando();
-		arguments.prc.csrfToken = csrfGenerateToken( "fornecedores" );
 		arguments.prc.mensagem = flash.get( "fornecedoresMensagem", "" );
 		arguments.event.setView( "fornecedores/aprovacao" );
 	}
 
 	public void function aprovarFornecedor( event, rc, prc ) secured="true" {
-		if ( NOT validarToken( arguments.event, arguments.rc, arguments.prc ) ) return;
 		getInstance( "FornecedoresService" ).aprovarFornecedor( arguments.rc.cdFornecedor ?: "" );
 		flash.put( "fornecedoresMensagem", "Fornecedor aprovado e publicado na lista." );
 		relocate( uri = "/fornecedores/aprovacao", statusCode = 303 );
 	}
 
 	public void function excluirFornecedor( event, rc, prc ) secured="true" {
-		if ( NOT validarToken( arguments.event, arguments.rc, arguments.prc ) ) return;
 		getInstance( "FornecedoresService" ).excluirFornecedor( arguments.rc.cdFornecedor ?: "" );
 		flash.put( "fornecedoresMensagem", "Fornecedor excluído com sucesso." );
 		relocate( uri = "/fornecedores/aprovacao", statusCode = 303 );
@@ -81,18 +77,11 @@ component extends="coldbox.system.EventHandler" {
 	private void function prepararCadastro( required any event, required struct prc ) {
 		arguments.prc.titulo = "Cadastrar fornecedor";
 		arguments.prc.categorias = getInstance( "CategoriaService" ).obterCategorias();
-		arguments.prc.csrfToken = csrfGenerateToken( "fornecedores" );
 		arguments.prc.mensagem = flash.get( "fornecedoresMensagem", "" );
 		param arguments.prc.erro = "";
 		arguments.event.setView( "fornecedores/adicionar" );
 	}
 
-	private boolean function validarToken( required any event, required struct rc, required struct prc ) {
-		local.token = arguments.rc.csrfToken ?: "";
-		if ( isSimpleValue( local.token ) AND len( local.token ) AND csrfVerifyToken( local.token, "fornecedores" ) ) return true;
-		exibirErro( arguments.event, arguments.prc, 403, "O formulário expirou ou é inválido. Atualize a página e tente novamente." );
-		return false;
-	}
 
 	private void function exibirErro( required any event, required struct prc, required numeric status, required string mensagem ) {
 		arguments.prc.titulo = "Não foi possível concluir";

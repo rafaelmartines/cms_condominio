@@ -6,7 +6,6 @@
 		<cfif len( prc.mensagem )><div class="alert alert-success" role="status">#encodeForHTML( prc.mensagem )#</div></cfif>
 		<cfif len( prc.erro )><div class="alert alert-danger" role="alert">#encodeForHTML( prc.erro )#</div></cfif>
 		<form method="post" action="/fornecedores/adicionar" class="card card-body p-3 p-sm-4 shadow-sm">
-			<input type="hidden" name="csrfToken" value="#encodeForHTMLAttribute( prc.csrfToken )#">
 			<p class="small text-body-secondary mb-3">Campos com * são obrigatórios.</p>
 			<div class="mb-4">
 				<label for="nmFornecedor" class="form-label fw-semibold">Nome do fornecedor *</label>

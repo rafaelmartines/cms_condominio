@@ -5,8 +5,8 @@
 				<h1 class="h4 mb-3">Entrar</h1>
 				<cfif len( prc.mensagem )><div class="alert alert-success" role="status">#encodeForHTML( prc.mensagem )#</div></cfif>
 				<cfif len( prc.erro )><div class="alert alert-danger" role="alert">#encodeForHTML( prc.erro )#</div></cfif>
-				<form method="post" action="/login">
-					<input type="hidden" name="csrfToken" value="#encodeForHTMLAttribute( prc.csrfToken )#">
+				<div id="loginErro" class="alert alert-danger d-none" role="alert"></div>
+				<form method="post" action="/login" data-jwt-login>
 					<div class="mb-3">
 						<label for="txEmail" class="form-label">E-mail</label>
 						<input id="txEmail" name="txEmail" type="email" class="form-control" autocomplete="email" maxlength="254" value="#encodeForHTMLAttribute( prc.dados.txEmail )#" required>

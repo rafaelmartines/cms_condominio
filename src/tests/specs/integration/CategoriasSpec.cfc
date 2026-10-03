@@ -4,7 +4,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 		describe( "Gerenciamento de categorias", function() {
 			beforeEach( function() {
 				setup();
-				variables.authTeste = prepareMock( getWireBox().getInstance( "authenticationService@cbauth" ) );
+				variables.authTeste = prepareMock( getWireBox().getInstance( "security.JwtAuthenticationService" ) );
 				variables.isLoggedInOriginal = variables.authTeste.isLoggedIn;
 				variables.getUserOriginal = variables.authTeste.getUser;
 				variables.authTeste.$( "isLoggedIn", true );
@@ -45,16 +45,15 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			} );
 
 			it( "recusa valores complexos do request sem falha de conversão", function() {
-				local.token = csrfGenerateToken( "categorias" );
 				for ( local.nome in [ [], [ "Nome" ], { nome : "Nome" } ] ) {
 					setup();
-					local.event = post( route = "/categorias/adicionar", params = { csrfToken : token, txCategoria : nome } );
+					local.event = post( route = "/categorias/adicionar", params = { txCategoria : nome } );
 					expect( event.getStatusCode() ).toBe( 422 );
 					expect( event.getCurrentView() ).toBe( "categorias/adicionar" );
 					expect( event.getPrivateValue( "categoria" ).txCategoria ).toBe( "" );
 				}
 				setup();
-				local.event = post( route = "/categorias/adicionar", params = { csrfToken : token } );
+				local.event = post( route = "/categorias/adicionar", params = {  } );
 				expect( event.getStatusCode() ).toBe( 422 );
 			} );
 
@@ -108,7 +107,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				}
 			} );
 
-			it( "renderiza formulários, preserva erros e aceita POST com token válido", function() {
+			it( "renderiza formulários, preserva erros e aceita POST autenticado sem CSRF", function() {
 				transaction {
 					try {
 						local.fixture = getWireBox().getInstance( "Categoria" ).create( {
@@ -118,22 +117,21 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						local.event = get( route = "/categorias/#id#/editar" );
 						expect( event.getCurrentView() ).toBe( "categorias/editar" );
 						expect( event.getRenderedContent() ).notToInclude( '<script>alert("teste")</script>' );
-						local.token = event.getPrivateValue( "csrfToken" );
 						setup();
-						event = post( route = "/categorias/#id#/editar", params = { csrfToken : token, txCategoria : "   " } );
+						event = post( route = "/categorias/#id#/editar", params = { txCategoria : "   " } );
 						expect( event.getPrivateValue( "erroNome" ) ).toInclude( "1 a 100" );
 						expect( event.getStatusCode() ).toBe( 422 );
 						expect( event.getPrivateValue( "categoria" ).txCategoria ).toBe( "   " );
 						expect( event.getCurrentView() ).toBe( "categorias/editar" );
 						setup();
-						post( route = "/categorias/#id#/editar", params = { csrfToken : token, txCategoria : "Nome editado" }, renderResults = false );
+						post( route = "/categorias/#id#/editar", params = { txCategoria : "Nome editado" }, renderResults = false );
 						expect( getWireBox().getInstance( "CategoriaService" ).obterCategoria( id ).txCategoria ).toBe( "Nome editado" );
 						setup();
 						event = get( route = "/categorias/#id#/inativar" );
 						expect( event.getRenderedContent() ).toInclude( "Confirmar inativação" );
 						expect( getWireBox().getInstance( "CategoriaService" ).obterCategoria( id ).inAtivo ).toBeTrue();
 						setup();
-						post( route = "/categorias/#id#/inativar", params = { csrfToken : token }, renderResults = false );
+						post( route = "/categorias/#id#/inativar", params = {  }, renderResults = false );
 						expect( getWireBox().getInstance( "CategoriaService" ).obterCategoria( id ).inAtivo ).toBeFalse();
 						setup();
 						event = get( route = "/categorias/#id#/inativar" );
@@ -165,17 +163,16 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						local.event = get( route = "/categorias/adicionar" );
 						expect( event.getCurrentView() ).toBe( "categorias/adicionar" );
 						expect( event.getRenderedContent() ).toInclude( "Criar categoria" );
-						local.token = event.getPrivateValue( "csrfToken" );
 						local.invalido = '<script>alert("teste")</script>' & repeatString( "a", 101 );
 						setup();
-						event = post( route = "/categorias/adicionar", params = { csrfToken : token, txCategoria : invalido } );
+						event = post( route = "/categorias/adicionar", params = { txCategoria : invalido } );
 						expect( event.getStatusCode() ).toBe( 422 );
 						expect( event.getCurrentView() ).toBe( "categorias/adicionar" );
 						expect( event.getPrivateValue( "categoria" ).txCategoria ).toBe( invalido );
 						expect( event.getRenderedContent() ).notToInclude( '<script>alert("teste")</script>' );
 						setup();
 						local.nome = "Categoria teste " & createUUID();
-						event = post( route = "/categorias/adicionar", params = { csrfToken : token, txCategoria : "  " & nome & "  ", inAtivo : false, cdCategoria : 2147483647, tsCriadoEm : "2000-01-01" }, renderResults = false );
+						event = post( route = "/categorias/adicionar", params = { txCategoria : "  " & nome & "  ", inAtivo : false, cdCategoria : 2147483647, tsCriadoEm : "2000-01-01" }, renderResults = false );
 						expect( event.getValue( "relocate_URI", "" ) ).toBe( "/categorias" );
 						expect( event.getValue( "relocate_statusCode", 0 ) ).toBe( 303 );
 						local.criada = queryExecute(
@@ -220,29 +217,18 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				}
 			} );
 
-			it( "bloqueia criação sem CSRF e gravação por GET", function() {
-				local.event = post( route = "/categorias/adicionar", params = { txCategoria : "Não gravar" } );
-				expect( event.getStatusCode() ).toBe( 403 );
-				setup();
-				expect( function() { execute( event = "Categorias.criar" ); } ).toThrow( "InvalidHTTPMethod" );
-			} );
-
 			it( "bloqueia GET direto nas ações de gravação", function() {
 				expect( function() { execute( event = "Categorias.salvar" ); } ).toThrow( "InvalidHTTPMethod" );
+				expect( function() { execute( event = "Categorias.criar" ); } ).toThrow( "InvalidHTTPMethod" );
 			} );
-
-			it( "recusa alterações sem token CSRF", function() {
-				local.event = post( route = "/categorias/1/editar", params = { txCategoria : "Não gravar" } );
-				expect( event.getPrivateValue( "erro" ) ).toInclude( "formulário expirou" );
-				expect( event.getStatusCode() ).toBe( 403 );
-				expect( event.getCurrentView() ).toBe( "categorias/erro" );
+			it( "mantém validação de entrada sem exigir CSRF", function() {
+				local.evento = post( route = "/categorias/adicionar", params = { txCategoria : "" } );
+				expect( local.evento.getStatusCode() ).toBe( 422 );
 			} );
-
-			it( "recusa inativação com token inválido", function() {
-				local.event = post( route = "/categorias/1/inativar", params = { csrfToken : "invalido" } );
-				expect( event.getCurrentView() ).toBe( "categorias/erro" );
+			it( "formulário não contém campo CSRF", function() {
+				local.evento = get( route = "/categorias/adicionar" );
+				expect( local.evento.getRenderedContent() ).notToInclude( "csrf" );
 			} );
-
 			it( "renderiza a listagem", function() {
 				local.event = get( route = "/categorias", renderResults = true );
 				expect( event.getRenderedContent() ).toInclude( "Categorias de fornecedores" );

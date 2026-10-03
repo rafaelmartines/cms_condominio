@@ -100,6 +100,8 @@ component {
 			appenders : { coldboxTracer : { class : "coldbox.system.logging.appenders.ConsoleAppender" } },
 			// Root Logger
 			root      : { levelmax : "INFO", appenders : "*" },
+			// O JwtService da dependência inclui tokens/payloads em logs WARN/INFO.
+			categories : { "cbsecurity.models.jwt.JwtService" : { levelmax : "ERROR", appenders : "*" } },
 			// Implicit Level Categories
 			info      : [ "coldbox.system" ]
 		};

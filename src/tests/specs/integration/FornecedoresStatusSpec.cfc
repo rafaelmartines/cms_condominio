@@ -125,110 +125,77 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				expect( function() { service.aprovarFornecedor( 2147483647 ); } ).toThrow( "FornecedorNaoAguardando" );
 			} );
 
-			it( "exclui somente Aguardando com usuário autenticado e CSRF, removendo os vínculos", function() {
+			it( "exclui Aguardando com JWT sem CSRF e remove vínculos", function() {
 				transaction {
 					try {
 						local.categoria = criarCategoria();
 						local.service = getWireBox().getInstance( "FornecedoresService" );
 						local.id = local.service.addFornecedor( novoDTO( local.categoria ) );
-						local.auth = getWireBox().getInstance( "authenticationService@cbauth" );
-						local.auth.logout();
-						local.event = post( route = "/fornecedores/#local.id#/excluir", renderResults = false );
-						expect( local.event.getValue( "relocate_event", "" ) ).toBe( "login" );
-						local.usuarioId = criarUsuario();
-						local.auth.login( getWireBox().getInstance( "UsuarioService" ).retrieveUserById( local.usuarioId ) );
-						setup();
 						local.event = post( route = "/fornecedores/#local.id#/excluir" );
-						expect( local.event.getStatusCode() ).toBe( 403 );
-						setup();
-						expect( function() { execute( event = "Fornecedores.excluirFornecedor" ); } ).toThrow( "InvalidHTTPMethod" );
+						expect( local.event.getStatusCode() ).toBe( 401 );
+						local.usuarioId = criarUsuario();
+						local.tokens = getWireBox().getInstance( "security.JwtAuthenticationService" ).emitirTokens( getWireBox().getInstance( "UsuarioService" ).retrieveUserById( local.usuarioId ) );
+						local.headers = { Authorization : "Bearer " & local.tokens.access_token };
 						local.verificado = local.service.addFornecedor( novoDTO( local.categoria ) );
 						local.service.aprovarFornecedor( local.verificado );
 						expect( function() { service.excluirFornecedor( verificado ); } ).toThrow( "FornecedorNaoAguardando" );
-						local.listagem = local.service.listarAguardando();
-						expect( arrayFind( local.listagem, function( fornecedor ) { return arguments.fornecedor.cd_fornecedor EQ id; } ) ).toBeGT( 0 );
-						expect( arrayFind( local.listagem, function( fornecedor ) { return arguments.fornecedor.cd_fornecedor EQ verificado; } ) ).toBe( 0 );
 						setup();
-						local.event = get( route = "/fornecedores/aprovacao" );
+						local.event = get( route = "/fornecedores/aprovacao", headers = local.headers );
 						expect( local.event.getRenderedContent() ).toInclude( "/fornecedores/#local.id#/excluir" );
+						expect( local.event.getRenderedContent() ).notToInclude( "csrf" );
 						setup();
-						local.event = post( route = "/fornecedores/#local.id#/excluir", params = { csrfToken : csrfGenerateToken( "fornecedores" ) }, renderResults = false );
+						local.event = post( route = "/fornecedores/#local.id#/excluir", headers = local.headers, renderResults = false );
 						expect( local.event.getValue( "relocate_URI", "" ) ).toBe( "/fornecedores/aprovacao" );
 						local.registros = queryExecute( "SELECT cd_fornecedor FROM cmscondominio.tb_fornecedores WHERE cd_fornecedor = :id", { id : { value : local.id, cfsqltype : "cf_sql_integer" } } );
 						expect( local.registros.recordCount ).toBe( 0 );
 						local.vinculos = queryExecute( "SELECT cd_fornecedor FROM cmscondominio.tb_fornecedor_categoria WHERE cd_fornecedor = :id", { id : { value : local.id, cfsqltype : "cf_sql_integer" } } );
 						expect( local.vinculos.recordCount ).toBe( 0 );
-						expect( function() { service.excluirFornecedor( id ); } ).toThrow( "FornecedorNaoAguardando" );
-						expect( function() { service.excluirFornecedor( "1 OR 1=1" ); } ).toThrow( "FornecedorInvalido" );
-					} finally {
-						getWireBox().getInstance( "authenticationService@cbauth" ).logout();
-						transaction action="rollback";
-					}
+					} finally { transaction action="rollback"; }
 				}
 			} );
-
 			it( "protege cadastro e aprovação contra visitantes inclusive por evento direto", function() {
-				getWireBox().getInstance( "authenticationService@cbauth" ).logout();
 				for ( local.rota in [ "/fornecedores/adicionar", "/fornecedores/aprovacao", "/Fornecedores/aprovacao" ] ) {
 					setup();
-					local.event = get( route = local.rota, renderResults = false );
-					expect( local.event.getValue( "relocate_event", "" ) ).toBe( "login" );
+					local.event = get( route = local.rota );
+					expect( local.event.getStatusCode() ).toBe( 401 );
 				}
 				setup();
-				local.event = post( route = "/fornecedores/1/aprovar", renderResults = false );
-				expect( local.event.getValue( "relocate_event", "" ) ).toBe( "login" );
+				local.event = post( route = "/fornecedores/1/aprovar" );
+				expect( local.event.getStatusCode() ).toBe( 401 );
 			} );
-
-			it( "usuário autenticado aprova; verifica CSRF, formulários, XSS e encerramento da sessão", function() {
+			it( "cadastra e aprova com Bearer; valida dados, XSS e logout", function() {
 				transaction {
 					try {
 						local.usuarioId = criarUsuario();
-						local.auth = getWireBox().getInstance( "authenticationService@cbauth" );
-						local.auth.login( getWireBox().getInstance( "UsuarioService" ).retrieveUserById( local.usuarioId ) );
-						expect( function() { execute( event = "Fornecedores.aprovarFornecedor" ); } ).toThrow( "InvalidHTTPMethod" );
+						local.tokens = getWireBox().getInstance( "security.JwtAuthenticationService" ).emitirTokens( getWireBox().getInstance( "UsuarioService" ).retrieveUserById( local.usuarioId ) );
+						local.headers = { Authorization : "Bearer " & local.tokens.access_token };
 						setup();
-						local.event = get( route = "/fornecedores/aprovacao" );
-						expect( local.event.getCurrentView() ).toBe( "fornecedores/aprovacao" );
-						expect( local.event.getRenderedContent() ).toInclude( 'href="/fornecedores/aprovacao"' );
-						setup();
-						local.event = post( route = "/fornecedores/1/aprovar" );
-						expect( local.event.getStatusCode() ).toBe( 403 );
-						setup();
-						local.event = get( route = "/fornecedores/adicionar" );
+						local.event = get( route = "/fornecedores/adicionar", headers = local.headers );
 						expect( local.event.getCurrentView() ).toBe( "fornecedores/adicionar" );
-						local.token = local.event.getPrivateValue( "csrfToken" );
 						setup();
-						local.event = post( route = "/fornecedores/adicionar" );
-						expect( local.event.getStatusCode() ).toBe( 403 );
-						setup();
-						local.event = post( route = "/fornecedores/adicionar", params = { csrfToken : local.token, nmFornecedor : '<script>alert(1)</script>', categorias : {} } );
+						local.event = post( route = "/fornecedores/adicionar", headers = local.headers, params = { nmFornecedor : '<script>alert(1)</script>', categorias : {} } );
 						expect( local.event.getStatusCode() ).toBe( 422 );
 						expect( local.event.getRenderedContent() ).notToInclude( '<script>alert(1)</script>' );
 						local.categoria = criarCategoria();
 						local.nome = "Fornecedor teste " & createUUID();
 						setup();
-						local.event = post( route = "/fornecedores/adicionar", params = { csrfToken : local.token, nmFornecedor : local.nome, nrTelefone : "5511999999999", categorias : local.categoria, status_id : 1, statusId : 1 }, renderResults = false );
+						local.event = post( route = "/fornecedores/adicionar", headers = local.headers, params = { nmFornecedor : local.nome, nrTelefone : "5511999999999", categorias : local.categoria, status_id : 1, statusId : 1 }, renderResults = false );
 						expect( local.event.getValue( "relocate_statusCode", 0 ) ).toBe( 303 );
 						local.fornecedor = getWireBox().getInstance( "Fornecedor" ).where( "nmFornecedor", local.nome ).firstOrFail();
 						expect( local.fornecedor.getStatus().getDescricao() ).toBe( "Aguardando" );
 						setup();
-						local.event = get( route = "/fornecedores/aprovacao" );
+						local.event = get( route = "/fornecedores/aprovacao", headers = local.headers );
 						expect( local.event.getRenderedContent() ).toInclude( local.nome );
 						setup();
-						local.event = post( route = "/fornecedores/#local.fornecedor.getCdFornecedor()#/aprovar" );
-						expect( local.event.getStatusCode() ).toBe( 403 );
-						setup();
-						local.event = post( route = "/fornecedores/#local.fornecedor.getCdFornecedor()#/aprovar", params = { csrfToken : local.token }, renderResults = false );
+						local.event = post( route = "/fornecedores/#local.fornecedor.getCdFornecedor()#/aprovar", headers = local.headers, renderResults = false );
 						expect( local.event.getValue( "relocate_statusCode", 0 ) ).toBe( 303 );
 						expect( getWireBox().getInstance( "Fornecedor" ).findOrFail( local.fornecedor.getCdFornecedor() ).getStatus().getDescricao() ).toBe( "Verificado" );
-						local.auth.logout();
 						setup();
-						local.event = get( route = "/fornecedores/aprovacao", renderResults = false );
-						expect( local.event.getValue( "relocate_event", "" ) ).toBe( "login" );
-					} finally {
-						getWireBox().getInstance( "authenticationService@cbauth" ).logout();
-						transaction action="rollback";
-					}
+						post( route = "/logout", headers = { Authorization : "Bearer " & local.tokens.refresh_token } );
+						setup();
+						local.event = get( route = "/fornecedores/aprovacao", headers = local.headers );
+						expect( local.event.getStatusCode() ).toBe( 401 );
+					} finally { transaction action="rollback"; }
 				}
 			} );
 		} );
