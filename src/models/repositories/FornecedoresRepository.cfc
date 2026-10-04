@@ -184,7 +184,10 @@ component singleton extends="BaseRepository" {
 		return variables.consulta( local.sql, local.parametros, false );
 	}
 
-	public numeric function addFornecedor( required struct dados ) {
+	public numeric function addFornecedor( required struct dados, string status = "Aguardando" ) {
+		if ( NOT listFind( "Aguardando,Verificado", arguments.status ) ) {
+			throw( type = "StatusFornecedorInvalido", message = "Status de fornecedor inválido." );
+		}
 		transaction {
 			// Bloqueia alterações das categorias durante a criação dos vínculos.
 			local.categorias = queryExecute(
@@ -195,7 +198,7 @@ component singleton extends="BaseRepository" {
 			if ( local.categorias.recordCount NEQ arrayLen( arguments.dados.categorias ) ) {
 				throw( type = "FornecedorInvalido", message = "Selecione somente categorias existentes e ativas." );
 			}
-			local.status = obterStatus( "Aguardando" );
+			local.status = obterStatus( arguments.status );
 			local.criado = variables.fornecedorProvider.$get().create( {
 				nmFornecedor : arguments.dados.nmFornecedor,
 				nmEmpresa : arguments.dados.nmEmpresa,

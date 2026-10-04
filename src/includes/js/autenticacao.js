@@ -5,6 +5,28 @@
 	if (window.cmsAuthLifecycle) window.cmsAuthLifecycle.abort();
 	const lifecycle = window.cmsAuthLifecycle = new AbortController();
 	const ouvir = (target, name, callback) => target.addEventListener(name, callback, { signal: lifecycle.signal });
+	const menu = document.getElementById('menuLateralDireito');
+	if (menu) ouvir(menu, 'hidden.bs.offcanvas', () => {
+		document.querySelector('[data-bs-target="#menuLateralDireito"]')?.focus({ preventScroll: true });
+	});
+	const liberarMenu = async () => {
+		const instancia = menu && window.bootstrap?.Offcanvas.getInstance(menu);
+		if (!instancia) return;
+		// Aguarda a transição para liberar backdrop, rolagem e foco antes do descarte.
+		if (menu.classList.contains('show') || menu.classList.contains('showing') || menu.classList.contains('hiding')) {
+			await new Promise((resolve) => {
+				menu.addEventListener('hidden.bs.offcanvas', resolve, { once: true });
+				if (!menu.classList.contains('hiding')) instancia.hide();
+			});
+		}
+		instancia.dispose();
+	};
+	const abrirMenu = () => {
+		const atual = document.getElementById('menuLateralDireito');
+		if (atual && document.body.dataset.jwtAutenticado === 'true') {
+			window.bootstrap.Offcanvas.getOrCreateInstance(atual).show();
+		}
+	};
 	let renovacao;
 	let timer;
 	let navegando = false;
@@ -95,6 +117,7 @@
 		const url = new URL(response.url, location.href);
 		if (url.origin !== location.origin) throw new Error('Destino de navegação inválido.');
 		const html = await response.text();
+		await liberarMenu();
 		clearTimeout(timer);
 		history[replace ? 'replaceState' : 'pushState']({}, '', url.href);
 		const pagina = new DOMParser().parseFromString(html, 'text/html');
@@ -102,6 +125,8 @@
 		document.replaceChild(document.importNode(pagina.documentElement, true), document.documentElement);
 		// Scripts analisados pelo DOMParser são inertes; recria na ordem do layout.
 		for (const original of Array.from(document.querySelectorAll('script'))) {
+			// O Bootstrap mantém eventos delegados no document, que sobrevive à navegação.
+			if (window.bootstrap && original.getAttribute('src') === '/includes/vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js') continue;
 			const script = document.createElement('script');
 			for (const atributo of original.attributes) script.setAttribute(atributo.name, atributo.value);
 			script.textContent = original.textContent;
@@ -135,6 +160,7 @@
 				method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(dados)
 			})));
 			await navegar('/bem-vindo');
+			abrirMenu();
 		} catch (erro) { alerta.textContent = erro.message; alerta.classList.remove('d-none'); }
 		finally { botao.disabled = false; }
 	});
@@ -211,7 +237,7 @@
 			}
 			agendar(tokens);
 			await garantir();
-			if (login) await navegar('/bem-vindo', true);
+			if (login) { await navegar('/bem-vindo', true); abrirMenu(); }
 			else if (document.body.dataset.jwtAutenticado !== 'true') await navegar(location.href, true);
 		} catch (erro) { if (erro.status === 401) location.assign('/login'); }
 	})();

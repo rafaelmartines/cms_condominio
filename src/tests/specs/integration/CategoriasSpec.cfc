@@ -44,6 +44,14 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				}
 			} );
 
+			it( "valida identificador e existência ao reativar", function() {
+				local.service = getWireBox().getInstance( "CategoriaService" );
+				for ( local.id in [ "", "0", "-1", "abc", "2147483648", [], { id : 1 } ] ) {
+					expect( function() { service.reativarCategoria( id ); } ).toThrow( "CategoriaInvalida" );
+				}
+				expect( function() { service.reativarCategoria( 2147483647 ); } ).toThrow( "CategoriaNaoEncontrada" );
+			} );
+
 			it( "recusa valores complexos do request sem falha de conversão", function() {
 				for ( local.nome in [ [], [ "Nome" ], { nome : "Nome" } ] ) {
 					setup();
@@ -101,6 +109,13 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						expect( dateFormat( entidade.getTsCriadoEm(), "yyyy-mm-dd" ) ).toBe( "2020-01-01" );
 						expect( entidade.getTsAtualizado() GT entidade.getTsCriadoEm() ).toBeTrue();
 						expect( arrayLen( entidade.getFornecedores() ) ).toBe( 1 );
+						service.reativarCategoria( id );
+						service.reativarCategoria( id );
+						expect( service.obterCategoria( id ).inAtivo ).toBeTrue();
+						expect( arrayLen( service.obterCategorias().filter( function( categoria ) { return categoria.cdCategoria EQ id; } ) ) ).toBe( 1 );
+						local.reativada = getWireBox().getInstance( "Categoria" ).findOrFail( id );
+						expect( dateFormat( local.reativada.getTsCriadoEm(), "yyyy-mm-dd" ) ).toBe( "2020-01-01" );
+						expect( arrayLen( local.reativada.getFornecedores() ) ).toBe( 1 );
 					} finally {
 						transaction action="rollback";
 					}
@@ -136,6 +151,21 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						setup();
 						event = get( route = "/categorias/#id#/inativar" );
 						expect( event.getRenderedContent() ).toInclude( "Esta categoria já está inativa" );
+						setup();
+						local.event = get( route = "/categorias" );
+						expect( local.event.getRenderedContent() ).toInclude( '/categorias/#id#/reativar' );
+						setup();
+						local.event = put( route = "/categorias/#id#/reativar" );
+						expect( local.event.getStatusCode() ).toBe( 200 );
+						local.resposta = deserializeJSON( local.event.getRenderedContent() );
+						expect( local.resposta.cdCategoria ).toBe( id );
+						expect( local.resposta.txCategoria ).toBe( "Nome editado" );
+						expect( local.resposta.inAtivo ).toBeTrue();
+						setup();
+						local.event = put( route = "/categorias/#id#/reativar" );
+						expect( local.event.getStatusCode() ).toBe( 200 );
+						expect( deserializeJSON( local.event.getRenderedContent() ).inAtivo ).toBeTrue();
+						expect( getWireBox().getInstance( "CategoriaService" ).obterCategoria( id ).inAtivo ).toBeTrue();
 					} finally {
 						transaction action="rollback";
 					}
@@ -220,7 +250,51 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			it( "bloqueia GET direto nas ações de gravação", function() {
 				expect( function() { execute( event = "Categorias.salvar" ); } ).toThrow( "InvalidHTTPMethod" );
 				expect( function() { execute( event = "Categorias.criar" ); } ).toThrow( "InvalidHTTPMethod" );
+
 			} );
+			it( "reativação responde em JSON para ID inválido e inexistente", function() {
+				for ( local.id in [ "0", "abc", "2147483648" ] ) {
+					setup();
+					local.event = put( route = "/categorias/#local.id#/reativar" );
+					expect( local.event.getStatusCode() ).toBe( 422 );
+					expect( deserializeJSON( local.event.getRenderedContent() ).erro ).toInclude( "inválido" );
+				}
+				setup();
+				local.event = put( route = "/categorias/2147483647/reativar" );
+				expect( local.event.getStatusCode() ).toBe( 404 );
+				expect( deserializeJSON( local.event.getRenderedContent() ).erro ).toBe( "Categoria não encontrada." );
+			} );
+
+			it( "reativação recusa outros métodos com 405", function() {
+				for ( local.metodo in [ "GET", "POST", "PATCH", "DELETE" ] ) {
+					setup();
+					local.event = request( route = "/categorias/2147483647/reativar", method = local.metodo );
+					expect( local.event.getStatusCode() ).toBe( 405 );
+					expect( deserializeJSON( local.event.getRenderedContent() ).erro ).toInclude( "PUT" );
+				}
+			} );
+
+			it( "reativação exige autenticação", function() {
+				variables.authTeste.$( "isLoggedIn", false );
+				local.event = put( route = "/categorias/2147483647/reativar", headers = { Accept : "application/json" } );
+				expect( local.event.getStatusCode() ).toBe( 401 );
+			} );
+
+			it( "reativação responde 500 em JSON sem expor falhas internas", function() {
+				local.service = prepareMock( getWireBox().getInstance( "CategoriaService" ) );
+				local.original = local.service.reativarCategoria;
+				local.service.$( "reativarCategoria" ).$throws( type = "Database", message = "Detalhe interno de teste" );
+				try {
+					local.event = put( route = "/categorias/1/reativar" );
+					expect( local.event.getStatusCode() ).toBe( 500 );
+					expect( deserializeJSON( local.event.getRenderedContent() ).erro ).toInclude( "Não foi possível reativar" );
+					expect( local.event.getRenderedContent() ).notToInclude( "Detalhe interno de teste" );
+				} finally {
+					local.service.reativarCategoria = local.original;
+					local.service.$property( "reativarCategoria", "variables", local.original );
+				}
+			} );
+
 			it( "mantém validação de entrada sem exigir CSRF", function() {
 				local.evento = post( route = "/categorias/adicionar", params = { txCategoria : "" } );
 				expect( local.evento.getStatusCode() ).toBe( 422 );

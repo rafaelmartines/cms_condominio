@@ -2,7 +2,7 @@
 <div class="row justify-content-center fornecedor-cadastro">
 	<div class="col-12 col-md-10 col-lg-8 col-xl-7">
 		<h1 class="h3">Cadastrar fornecedor</h1>
-		<p class="text-body-secondary mb-4">Informe o contato e os serviços oferecidos. O cadastro será publicado após aprovação.</p>
+		<p class="text-body-secondary mb-4">Cadastre fornecedores já aprovados. O fornecedor será publicado na lista ao salvar.</p>
 		<cfif len( prc.mensagem )><div class="alert alert-success" role="status">#encodeForHTML( prc.mensagem )#</div></cfif>
 		<cfif len( prc.erro )><div class="alert alert-danger" role="alert">#encodeForHTML( prc.erro )#</div></cfif>
 		<form method="post" action="/fornecedores/adicionar" class="card card-body p-3 p-sm-4 shadow-sm">

@@ -2,13 +2,15 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 	function run() {
 		describe( "Persistência de indicações", function() {
 			beforeEach( function() { setup(); } );
-			it( "grava fornecedor pendente e comentário sem enviar e-mail", function() {
+			it( "grava fornecedor pendente e comentário e avisa por e-mail", function() {
 				transaction {
 					try {
 						local.categoria = getWireBox().getInstance( "Categoria" ).create( { txCategoria : "Teste indicação", inAtivo : true } ).getCdCategoria();
 						local.dto = novoDTO( local.categoria );
-						local.service = prepareMock( getWireBox().getInstance( "FornecedoresService" ) );
-						local.resend = createStub().$( "enviarEmail", false );
+						local.dto.setNmFornecedor( '<script>alert("teste")</script>' );
+						local.service = prepareMock( new app.models.FornecedoresService() );
+						local.resend = createStub().$( "enviarEmail", true );
+						local.service.$property( "fornecedoresRepository", "variables", getWireBox().getInstance( "FornecedoresRepository" ) );
 						local.service.$property( "resend", "variables", local.resend );
 						expect( local.service.postIndicacao( local.dto ) ).toBeTrue();
 						local.registro = queryExecute(
@@ -25,7 +27,12 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						expect( local.registro.tx_conteudo[ 1 ] ).toBe( "Bom atendimento" );
 						expect( local.registro.nr_nota[ 1 ] ).toBe( 5 );
 						expect( local.registro.tx_instagram[ 1 ] ).toBe( "fornecedor" );
-						expect( local.resend.$count( "enviarEmail" ) ).toBe( 0 );
+						expect( local.resend.$count( "enviarEmail" ) ).toBe( 1 );
+						local.email = local.resend.$callLog().enviarEmail[ 1 ].corpoEmail;
+						expect( local.email.subject ).toBe( "Fornecedor aguardando aprovação" );
+						expect( local.email.html ).toInclude( "aguardando aprovação" );
+						expect( local.email.html ).toInclude( encodeForHTML( local.dto.getNmFornecedor() ) );
+						expect( local.email.html ).notToInclude( '<script>' );
 					} finally { transaction action="rollback"; }
 				}
 			} );
@@ -46,6 +53,25 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				} finally {
 					getWireBox().getInstance( "Categoria" ).findOrFail( local.categoria ).delete();
 				}
+			} );
+
+			it( "desfaz a indicação quando o Resend falha, permitindo nova tentativa", function() {
+				local.categoria = getWireBox().getInstance( "Categoria" ).create( { txCategoria : "Teste falha aviso", inAtivo : true } ).getCdCategoria();
+				try {
+					local.dto = novoDTO( local.categoria );
+					local.service = prepareMock( new app.models.FornecedoresService() );
+					local.service.$property( "fornecedoresRepository", "variables", getWireBox().getInstance( "FornecedoresRepository" ) );
+					local.resend = createStub().$( "enviarEmail" ).$throws( type = "ResendException", message = "Falha simulada" );
+					local.service.$property( "resend", "variables", local.resend );
+					expect( function() { service.postIndicacao( dto ); } ).toThrow( "ResendException" );
+					local.resend.$( "enviarEmail", false );
+					expect( function() { service.postIndicacao( dto ); } ).toThrow( "ResendException" );
+					local.registros = queryExecute(
+						"SELECT COUNT(*) AS total FROM cmscondominio.tb_fornecedor_categoria WHERE cd_categoria = :categoria",
+						{ categoria : { value : local.categoria, cfsqltype : "cf_sql_integer" } }
+					);
+					expect( local.registros.total[ 1 ] ).toBe( 0 );
+				} finally { getWireBox().getInstance( "Categoria" ).findOrFail( local.categoria ).delete(); }
 			} );
 
 			it( "rejeita apartamento inválido antes de persistir", function() {

@@ -1,6 +1,6 @@
 # CMS do condomínio
 
-Aplicação para consultar fornecedores, filtrar por nome e categoria, visualizar contatos, comentários e média das notas. Moradores podem enviar indicações de fornecedores e testemunhos por e-mail.
+Aplicação para consultar fornecedores, filtrar por nome e categoria, visualizar contatos, comentários e média das notas. Moradores podem indicar fornecedores para aprovação, com aviso por e-mail, e enviar testemunhos por e-mail.
 
 Os formulários enviam mensagens pelo Resend; esses fluxos não gravam fornecedores nem comentários no banco. Sugestões para assembleias e painel de avisos são objetivos futuros, ainda sem implementação no código atual.
 
@@ -94,7 +94,7 @@ Depois, confira a URL alterada sem `fwreinit`. Os testes de integração inicial
 | Método | Caminho | Função |
 | --- | --- | --- |
 | GET | `/` | Listagem de fornecedores com filtros |
-| GET | `/fornecedores/indicar` | Indicação por e-mail |
+| GET | `/fornecedores/indicar` | Indicação para aprovação, com aviso por e-mail |
 | GET/POST | `/fornecedores/adicionar` | Cadastro no banco (exige login) |
 | GET | `/fornecedores/aprovacao` | Pendências (somente administradores) |
 | POST | `/fornecedores/:cdFornecedor/aprovar` | Aprovar e publicar (somente administradores) |
@@ -103,8 +103,9 @@ Depois, confira a URL alterada sem `fwreinit`. Os testes de integração inicial
 | GET / POST | `/categorias/adicionar` | Formulário e criação de categoria ativa |
 | GET / POST | `/categorias/:cdCategoria/editar` | Formulário e gravação do nome da categoria |
 | GET / POST | `/categorias/:cdCategoria/inativar` | Confirmação e inativação da categoria |
+| PUT | `/categorias/:cdCategoria/reativar` | Reativação de categoria, preservando vínculos |
 | GET | `/api/fornecedores` | Dados da listagem |
-| POST | `/api/fornecedores/indicacao` | Cadastro de indicação aguardando aprovação |
+| POST | `/api/fornecedores/indicacao` | Cadastro de indicação aguardando aprovação e aviso via Resend |
 | POST | `/api/fornecedores/:cdFornecedor/testemunho` | Envio de testemunho por e-mail |
 | GET | `/healthcheck` | Verificação de conexão com o banco |
 
@@ -112,7 +113,7 @@ Os POSTs de indicação e testemunho recebem JSON convertido em `IndicacaoDTO` e
 
 O menu **Categorias de fornecedores** dá acesso ao gerenciamento, disponível apenas a usuários autenticados. A lista permite pesquisar, ordenar, paginar e filtrar a situação. A edição aceita nomes de 1 a 100 caracteres, removendo espaços nas extremidades, e mantém a situação atual. A inativação define `in_ativo = false`, preserva os vínculos existentes e retira a categoria das opções dos filtros e formulários. Categorias inativas continuam visíveis nos fornecedores já vinculados. Ambas as operações atualizam `ts_atualizado` via Quick, sem alterar `ts_criadoem`.
 
-Os formulários de categorias enviam POST com JWT no header Authorization. GET não grava dados. Entradas inválidas retornam 422, categoria inexistente retorna 404 e autenticação inválida retorna 401. Após sucesso, há redirecionamento para a lista e mensagem de confirmação. A criação gera uma categoria ativa; não há exclusão ou reativação nesta funcionalidade.
+Os formulários de categorias enviam POST com JWT no header Authorization. GET não grava dados. Entradas inválidas retornam 422, categoria inexistente retorna 404 e autenticação inválida retorna 401. Após sucesso, há redirecionamento para a lista e mensagem de confirmação. A criação gera uma categoria ativa. A listagem permite reativar categorias inativas, preservando o identificador, os vínculos e a data de criação; elas voltam às opções dos formulários e filtros. A reativação usa `PUT /categorias/{id}/reativar`, com JWT de acesso no header `Authorization`, sem corpo obrigatório. Retorna HTTP 200 e JSON `{ "cdCategoria": 1, "txCategoria": "Elétrica", "inAtivo": true }`, inclusive quando a categoria já está ativa. Erros retornam JSON com `erro`: 422 para identificador inválido, 404 para categoria inexistente e 405 para métodos diferentes de PUT (header `Allow: PUT`). O botão atualiza a tabela sem redirecionamento e preserva os filtros. Não há exclusão nesta funcionalidade. A tabela reúne busca por nome, filtro de situação e quantidade por página, com rolagem horizontal em telas pequenas.
 
 A listagem recebe `filtroNome`, `filtroCategoria`, `start`, `length`, `order[0][column]` e `order[0][dir]`, retornando `data`, `recordsTotal` e `recordsFiltered`. A paginação atual reduz os resultados em memória com `cbpaginator`. Hoje os dois totais usam a contagem filtrada e não há `draw` na resposta. A coluna de categorias também diverge do DTO de ordenação, que a mapeia para empresa; esses pontos exigem revisão conjunta da interface e do backend quando o contrato for alterado.
 
@@ -185,11 +186,11 @@ A migração usa uma transação, cria `cmscondominio.tb_status_fornecedor` (`id
 
 A entidade Quick `Fornecedor.statusId` mapeia `status_id`. `Fornecedor.status()` usa `belongsTo`, representando ManyToOne para `StatusFornecedor.id`; `StatusFornecedor.fornecedores()` é o inverso OneToMany. As consultas da lista e dos detalhes públicos exigem Verificado. Registros aguardando, inativos e IDs inexistentes não ficam acessíveis nos detalhes públicos.
 
-`FornecedoresService.addFornecedor()` valida os dados e grava o fornecedor como Aguardando junto com suas categorias ativas, em uma transação. O formulário não aceita status fornecido pelo cliente. `aprovarFornecedor()` faz uma atualização condicional de Aguardando para Verificado; tentativas repetidas, registros inativos ou inexistentes não são aprovados. `listarFornecedores()` preserva o contrato DataTables e retorna apenas verificados. A tela de aprovação mostra os dados para conferência e oferece as ações **Aprovar** e **Excluir**. Não há tela de inativação neste fluxo.
+`FornecedoresService.addFornecedor()` valida os dados e grava o fornecedor como **Verificado** junto com suas categorias ativas, em uma transação. O cadastro autenticado em `/fornecedores/adicionar` publica imediatamente fornecedores já aprovados. O formulário não aceita status fornecido pelo cliente. `aprovarFornecedor()` faz uma atualização condicional de Aguardando para Verificado; tentativas repetidas, registros inativos ou inexistentes não são aprovados. `listarFornecedores()` preserva o contrato DataTables e retorna apenas verificados. A tela de aprovação mostra os dados para conferência e oferece as ações **Aprovar** e **Excluir**. Não há tela de inativação neste fluxo.
 
 Cadastro, consulta das pendências, aprovação e exclusão exigem autenticação. Qualquer usuário autenticado pode acessar `/fornecedores/aprovacao` e aprovar ou excluir fornecedores com status **Aguardando**, sem permissão de administrador. O menu de aprovação aparece após o login. Os POSTs de cadastro, aprovação e exclusão exigem JWT de acesso válido no header Authorization, sem CSRF. A exclusão remove o fornecedor e seus vínculos em uma transação; fornecedores verificados ou inativos não podem ser excluídos por este fluxo.
 
-O formulário de indicação anterior foi preservado em `/fornecedores/indicar` e continua usando `POST /api/fornecedores/indicacao` para gravar o fornecedor como **Aguardando** (aguardando aprovação), suas categorias e um comentário na mesma transação, sem enviar e-mail. O comentário usa `nrApartamento`, `nmIndicador` como `nmNome`, `txMotivo` como `txConteudo` e a nota (padrão 5). O cadastro em `/fornecedores/adicionar` grava no banco e não envia e-mail.
+O formulário de indicação anterior foi preservado em `/fornecedores/indicar` e continua usando `POST /api/fornecedores/indicacao` para gravar o fornecedor como **Aguardando** (aguardando aprovação), suas categorias e um comentário, além de enviar um aviso de fornecedor aguardando aprovação por `Resend.enviarEmail()`, para `RESEND_TO`. Uma exceção ou retorno falso do envio desfaz a gravação, permitindo nova tentativa. O envio HTTP ocorre dentro da transação de gravação e pode aguardar até o timeout do Resend (10 segundos). Banco e serviço externo não compartilham uma transação: uma falha de confirmação no banco após o envio ou um timeout após a aceitação do e-mail pode deixar um aviso já enviado. O comentário usa `nrApartamento`, `nmIndicador` como `nmNome`, `txMotivo` como `txConteudo` e a nota (padrão 5). O cadastro em `/fornecedores/adicionar` grava no banco e não envia e-mail.
 
 Testes do fluxo:
 
@@ -278,6 +279,14 @@ curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.s
 ```
 
 Essa spec valida entradas, categorias inexistentes, formulários, CSRF, métodos HTTP e persistência. Os casos de gravação criam categorias e fornecedor temporários em transações com rollback, sem modificar registros existentes nem enviar e-mails. As sequences de identidade podem avançar mesmo com rollback; use um banco de testes para execução recorrente.
+
+Para conferir também a reativação por HTTP real, execute `CategoriasHttpSpec` com o servidor local ativo. Ela faz login com um usuário temporário, envia duas requisições `PUT /categorias/{id}/reativar` e confere HTTP 200, JSON e a situação ativa no banco. Os registros temporários são gravados fora de uma transação externa para ficarem visíveis à conexão HTTP, e removidos ao final; o teste também encerra o acesso temporário.
+
+```sh
+curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.specs.integration.CategoriasHttpSpec,tests.specs.integration.CategoriasSpec'
+```
+
+Após alterar `src/config/Router.cfc`, recarregue o ColdBox local antes de testar a aplicação: `curl -fsS 'http://localhost:10000/healthcheck?fwreinit=1'`. Esse comando exige a configuração local de reinit sem senha e reinicializa a aplicação. As specs usam uma aplicação virtual recém-inicializada; elas podem passar enquanto o servidor ainda mantém rotas antigas em memória. Confira se o corpo do healthcheck é `true`.
 
 Inspecione o relatório: sucesso HTTP não substitui a conferência dos resultados dos testes. Para mudanças visuais, confira a listagem, os filtros, os formulários e o console do navegador em desktop e mobile.
 

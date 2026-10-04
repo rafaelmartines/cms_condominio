@@ -40,6 +40,14 @@ component singleton extends="BaseRepository" {
 		return this;
 	}
 
+	public boolean function reativar( required numeric cdCategoria ) {
+		local.resultado = variables.categoriaProvider.$get().where( "cdCategoria", arguments.cdCategoria ).updateAll( {
+			inAtivo : true,
+			tsAtualizado : now()
+		} );
+		return local.resultado.result.recordCount GT 0;
+	}
+
 	public array function obterCategorias() {
 		local.sql = "
         SELECT

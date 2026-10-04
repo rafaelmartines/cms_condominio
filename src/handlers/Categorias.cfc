@@ -3,7 +3,7 @@ component extends="coldbox.system.EventHandler" secured="true" {
 	property name="categoriaService" inject="CategoriaService";
 
 	this.allowedMethods = {
-		index : "GET", adicionar : "GET", criar : "POST", editar : "GET", confirmarInativacao : "GET", salvar : "POST", inativar : "POST"
+		index : "GET", adicionar : "GET", criar : "POST", editar : "GET", confirmarInativacao : "GET", salvar : "POST", inativar : "POST", reativar : "PUT"
 	};
 
 	public void function index( event, rc, prc ) {
@@ -57,6 +57,23 @@ component extends="coldbox.system.EventHandler" secured="true" {
 
 	public void function onError( event, rc, prc, faultAction, exception, eventArguments ) {
 		arguments.prc.erroNotificacao = arguments.exception;
+		if ( arguments.faultAction EQ "reativar" ) {
+			local.status = 500;
+			local.mensagem = "Não foi possível reativar a categoria. Tente novamente em instantes.";
+			switch ( arguments.exception.type ) {
+				case "CategoriaInvalida": local.status = 422; break;
+				case "CategoriaNaoEncontrada": local.status = 404; break;
+				case "InvalidHTTPMethod":
+					local.status = 405;
+					arguments.event.setHTTPHeader( name = "Allow", value = "PUT" );
+					local.mensagem = "Use PUT para reativar a categoria.";
+					break;
+			}
+			if ( local.status EQ 422 OR local.status EQ 404 ) local.mensagem = arguments.exception.message;
+			if ( local.status EQ 500 ) log.error( "Falha ao reativar categoria (#arguments.exception.type#)." );
+			arguments.event.renderData( type = "json", statusCode = local.status, data = { erro : local.mensagem } );
+			return;
+		}
 		if ( arguments.exception.type EQ "InvalidHTTPMethod" ) {
 			throw( object = arguments.exception );
 		}
@@ -72,6 +89,11 @@ component extends="coldbox.system.EventHandler" secured="true" {
 			return;
 		}
 		exibirErro( arguments.event, arguments.prc, arguments.exception );
+	}
+
+	public void function reativar( event, rc, prc ) {
+		local.categoria = variables.categoriaService.reativarCategoria( arguments.rc.cdCategoria ?: "" );
+		arguments.event.renderData( type = "json", statusCode = 200, data = local.categoria );
 	}
 
 	private any function popularValidarDTO( required string perfil ) {

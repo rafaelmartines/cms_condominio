@@ -35,6 +35,16 @@ component singleton {
 		variables.categoriaRepository.criar( trim( arguments.txCategoria ) );
 	}
 
+	public struct function reativarCategoria( required any cdCategoria ) {
+		if ( NOT isSimpleValue( arguments.cdCategoria ) OR NOT reFind( "^[1-9][0-9]{0,9}$", arguments.cdCategoria ) OR arguments.cdCategoria GT 2147483647 ) {
+			throw( type = "CategoriaInvalida", message = "Identificador de categoria inválido." );
+		}
+		if ( NOT variables.categoriaRepository.reativar( arguments.cdCategoria ) ) {
+			throw( type = "CategoriaNaoEncontrada", message = "Categoria não encontrada." );
+		}
+		return obterCategoria( arguments.cdCategoria );
+	}
+
 	private void function validarNome( required any txCategoria ) {
 		local.dto = new dto.CategoriaDTO();
 		local.dto.setTxCategoria( arguments.txCategoria );

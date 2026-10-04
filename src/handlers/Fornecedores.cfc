@@ -26,7 +26,7 @@ component extends="coldbox.system.EventHandler" {
 	public void function criar( event, rc, prc ) secured="true" {
 		local.dto = populateModel( model = "FornecedorDTO", include = "nmFornecedor,nmEmpresa,nrTelefone,txInstagram,categorias" );
 		getInstance( "FornecedoresService" ).addFornecedor( local.dto );
-		flash.put( "fornecedoresMensagem", "Fornecedor cadastrado. Aguarde a aprovação." );
+		flash.put( "fornecedoresMensagem", "Fornecedor cadastrado e publicado na lista." );
 		relocate( uri = "/fornecedores/adicionar", statusCode = 303 );
 	}
 

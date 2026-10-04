@@ -28,7 +28,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						local.categoria = criarCategoria();
 						local.dto = novoDTO( local.categoria );
 						local.service = getWireBox().getInstance( "FornecedoresService" );
-						local.id = local.service.addFornecedor( local.dto );
+						local.id = novoAguardando( local.dto );
 						local.entidade = getWireBox().getInstance( "Fornecedor" ).findOrFail( local.id );
 						expect( local.entidade.getStatus().getDescricao() ).toBe( "Aguardando" );
 						expect( arrayLen( local.entidade.getCategorias() ) ).toBe( 1 );
@@ -77,7 +77,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						local.dto = novoDTO( local.categoria );
 						local.dto.setNmFornecedor( "São José Elétrica" );
 						local.service = getWireBox().getInstance( "FornecedoresService" );
-						local.id = local.service.addFornecedor( local.dto );
+						local.id = novoAguardando( local.dto );
 						local.service.aprovarFornecedor( local.id );
 						local.filtro = novoFiltro( local.categoria );
 						for ( local.nome in [ "sao jose", "SÃO JOSÉ", "eletrica", "Elétrica" ] ) {
@@ -100,7 +100,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						for ( local.nome in [ "A fornecedor temporário", "B fornecedor temporário", "C fornecedor temporário" ] ) {
 							local.dto = novoDTO( local.categoria );
 							local.dto.setNmFornecedor( local.nome );
-							local.id = local.service.addFornecedor( local.dto );
+							local.id = novoAguardando( local.dto );
 							if ( left( local.nome, 1 ) NEQ "C" ) local.service.aprovarFornecedor( local.id );
 						}
 						local.filtro = novoFiltro( local.categoria );
@@ -130,14 +130,13 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 					try {
 						local.categoria = criarCategoria();
 						local.service = getWireBox().getInstance( "FornecedoresService" );
-						local.id = local.service.addFornecedor( novoDTO( local.categoria ) );
+						local.id = novoAguardando( novoDTO( local.categoria ) );
 						local.event = post( route = "/fornecedores/#local.id#/excluir" );
 						expect( local.event.getStatusCode() ).toBe( 401 );
 						local.usuarioId = criarUsuario();
 						local.tokens = getWireBox().getInstance( "security.JwtAuthenticationService" ).emitirTokens( getWireBox().getInstance( "UsuarioService" ).retrieveUserById( local.usuarioId ) );
 						local.headers = { Authorization : "Bearer " & local.tokens.access_token };
 						local.verificado = local.service.addFornecedor( novoDTO( local.categoria ) );
-						local.service.aprovarFornecedor( local.verificado );
 						expect( function() { service.excluirFornecedor( verificado ); } ).toThrow( "FornecedorNaoAguardando" );
 						setup();
 						local.event = get( route = "/fornecedores/aprovacao", headers = local.headers );
@@ -163,7 +162,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				local.event = post( route = "/fornecedores/1/aprovar" );
 				expect( local.event.getStatusCode() ).toBe( 401 );
 			} );
-			it( "cadastra e aprova com Bearer; valida dados, XSS e logout", function() {
+			it( "cadastra já aprovado com Bearer; ignora status do request e valida dados, XSS e logout", function() {
 				transaction {
 					try {
 						local.usuarioId = criarUsuario();
@@ -182,14 +181,11 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						local.event = post( route = "/fornecedores/adicionar", headers = local.headers, params = { nmFornecedor : local.nome, nrTelefone : "5511999999999", categorias : local.categoria, status_id : 1, statusId : 1 }, renderResults = false );
 						expect( local.event.getValue( "relocate_statusCode", 0 ) ).toBe( 303 );
 						local.fornecedor = getWireBox().getInstance( "Fornecedor" ).where( "nmFornecedor", local.nome ).firstOrFail();
-						expect( local.fornecedor.getStatus().getDescricao() ).toBe( "Aguardando" );
+						expect( local.fornecedor.getStatus().getDescricao() ).toBe( "Verificado" );
+						expect( getWireBox().getInstance( "FornecedoresService" ).getFornecedor( local.fornecedor.getCdFornecedor() ).nmFornecedor ).toBe( local.nome );
 						setup();
 						local.event = get( route = "/fornecedores/aprovacao", headers = local.headers );
-						expect( local.event.getRenderedContent() ).toInclude( local.nome );
-						setup();
-						local.event = post( route = "/fornecedores/#local.fornecedor.getCdFornecedor()#/aprovar", headers = local.headers, renderResults = false );
-						expect( local.event.getValue( "relocate_statusCode", 0 ) ).toBe( 303 );
-						expect( getWireBox().getInstance( "Fornecedor" ).findOrFail( local.fornecedor.getCdFornecedor() ).getStatus().getDescricao() ).toBe( "Verificado" );
+						expect( local.event.getRenderedContent() ).notToInclude( local.nome );
 						setup();
 						post( route = "/logout", headers = { Authorization : "Bearer " & local.tokens.refresh_token } );
 						setup();
@@ -199,6 +195,10 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				}
 			} );
 		} );
+	}
+
+	private numeric function novoAguardando( required any dto ) {
+		return getWireBox().getInstance( "FornecedoresRepository" ).addFornecedor( arguments.dto.validar() );
 	}
 
 	private any function novoDTO( numeric categoria = 1 ) {

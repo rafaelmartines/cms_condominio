@@ -39,6 +39,8 @@ component {
 		route( "/categorias/adicionar" ).withHandler( "Categorias" ).toAction( { GET : "adicionar", POST : "criar" } );
 		route( "/categorias/:cdCategoria/editar" ).withHandler( "Categorias" ).toAction( { GET : "editar", POST : "salvar" } );
 		route( "/categorias/:cdCategoria/inativar" ).withHandler( "Categorias" ).toAction( { GET : "confirmarInativacao", POST : "inativar" } );
+		// O handler aceita somente PUT e responde 405 em JSON para outros métodos.
+		route( "/categorias/:cdCategoria/reativar", "Categorias.reativar" );
 
 		get( "/categorias", "Categorias.index" );
 
