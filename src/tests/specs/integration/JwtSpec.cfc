@@ -17,7 +17,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			} );
 
 			it( "login sem CSRF emite acesso e refresh; header autoriza a página", function() {
-				local.evento = post( route = "/login", params = { txEmail : "jwt@example.invalid", txSenha : "SenhaTeste123!" } );
+				local.evento = post( route = "/auth", params = { txEmail : "jwt@example.invalid", txSenha : "SenhaTeste123!" } );
 				local.tokens = local.evento.getRenderData().data;
 				expect( local.evento.getStatusCode() ).toBe( 200 );
 				expect( local.tokens ).toHaveKey( "refresh_token" );

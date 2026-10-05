@@ -45,7 +45,7 @@ test('login envia POST JSON na mesma origem, armazena JWT e libera o botão', as
 	const app = ambiente(() => new Response(JSON.stringify(tokens), { headers: { 'Content-Type': 'application/json' } }));
 	await app.enviar();
 	const { url, opcoes } = app.requisicoes[0];
-	assert.equal(url, '/login');
+	assert.equal(url, '/auth');
 	assert.equal(opcoes.method, 'POST');
 	assert.equal(opcoes.headers['Content-Type'], 'application/json');
 	assert.equal(opcoes.credentials, 'same-origin');

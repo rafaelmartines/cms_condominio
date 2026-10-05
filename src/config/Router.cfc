@@ -30,7 +30,9 @@ component {
 		} );
 
 		// @app_routes@
-		route( "/login" ).withHandler( "Autenticacao" ).toAction( { GET : "login", POST : "entrar" } );
+		get( "/login", "Autenticacao.login" );
+		// A ação restringe o endpoint a POST e retorna erros de método em JSON.
+		route( "/auth", "Autenticacao.entrar" );
 		route( "/cadastro" ).withHandler( "Autenticacao" ).toAction( { GET : "cadastro", POST : "criar" } );
 		get( "/bem-vindo", "Autenticacao.boasVindas" );
 		post( "/logout", "Autenticacao.sair" );

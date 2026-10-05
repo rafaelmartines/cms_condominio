@@ -89,11 +89,15 @@ curl -fsS 'http://localhost:10000/?fwreinit=1' -o /dev/null
 
 Depois, confira a URL alterada sem `fwreinit`. Os testes de integração inicializam sua própria aplicação e não atualizam as rotas da aplicação usada pelo navegador.
 
+Se o runtime continuar usando rotas antigas após a recarga, reinicie o container local com `podman restart cms_condominio` e aguarde o servidor voltar a responder antes de repetir a chamada.
+
 ## Páginas e endpoints
 
 | Método | Caminho | Função |
 | --- | --- | --- |
 | GET | `/` | Listagem de fornecedores com filtros |
+| GET | `/login` | Página de entrada |
+| POST | `/auth` | Validação de credenciais e emissão de JWT em JSON |
 | GET | `/fornecedores/indicar` | Indicação para aprovação, com aviso por e-mail |
 | GET/POST | `/fornecedores/adicionar` | Cadastro no banco (exige login) |
 | GET | `/fornecedores/aprovacao` | Pendências (somente administradores) |
@@ -123,11 +127,11 @@ A listagem recebe `filtroNome`, `filtroCategoria`, `start`, `length`, `order[0][
 
 O cbSecurity 3.8 usa `security.JwtAuthenticationService`, que autentica exclusivamente por `Authorization: Bearer <token>`. Cookies, sessão, corpo e parâmetros de URL não substituem esse header. As rotas com `secured="true"` verificam assinatura HS256, emissor, expiração, revogação e existência do usuário; refresh tokens não autorizam páginas protegidas. Qualquer usuário autenticado pode gerenciar categorias e cadastrar outros usuários. Os requisitos de fornecedores estão descritos abaixo.
 
-`POST /login` recebe JSON com `txEmail` (usuário) e `txSenha`. Após validar as credenciais, retorna `access_token`, `refresh_token`, `token_type`, `expires_at` e `refresh_expires_at`; os prazos são timestamps Unix em segundos. Não exige nem devolve `csrf_token`. As senhas têm de 12 a 128 caracteres e são armazenadas como PBKDF2-HMAC-SHA256 com salt aleatório e 600.000 iterações. O e-mail é normalizado para minúsculas e tem restrição única no banco. O DTO `UsuarioDTO` concentra as constraints.
+`POST /auth` recebe JSON com `txEmail` (usuário) e `txSenha`. Após validar as credenciais, retorna `access_token`, `refresh_token`, `token_type`, `expires_at` e `refresh_expires_at`; os prazos são timestamps Unix em segundos. Não exige nem devolve `csrf_token`. As senhas têm de 12 a 128 caracteres e são armazenadas como PBKDF2-HMAC-SHA256 com salt aleatório e 600.000 iterações. O e-mail é normalizado para minúsculas e tem restrição única no banco. O DTO `UsuarioDTO` concentra as constraints.
 
 A interface armazena o par no `localStorage` em `cms.jwt` e envia o acesso em `Authorization` nas chamadas de mesma origem. `fetch`, chamadas jQuery/DataTables e formulários usam esse fluxo; requests externos não recebem o JWT. O storage anterior (`cms.access_token`) e os cookies antigos não autenticam a aplicação: faça novo login após atualizar. O armazenamento local é acessível aos scripts da mesma origem; mantenha somente scripts confiáveis e codifique conteúdo dinâmico.
 
-O login de `autenticacao.js` usa `POST /login` com `Content-Type: application/json` e os campos `txEmail` e `txSenha`. O backend lê o objeto JSON e valida os campos antes de conferir as credenciais; o POST convencional de formulário continua aceito. Sucesso retorna HTTP 200 com `access_token`, `refresh_token`, `token_type`, `expires_at` e `refresh_expires_at`. Falhas retornam JSON com `erro`: 400 para JSON malformado ou que não seja objeto, 422 para campos inválidos, 401 para credenciais incorretas e 500 para falhas internas, sem expor detalhes. O cliente impede envios duplicados, cancela o login após 15 segundos e mostra mensagens de conexão, tempo limite e resposta inválida. Isso trata falhas de transporte; não impede indisponibilidade do servidor ou interrupções de rede.
+A página de entrada continua em `GET /login`; a autenticação usa o endpoint separado `POST /auth`. O login de `autenticacao.js` usa `POST /auth` com `Content-Type: application/json` e os campos `txEmail` e `txSenha`. O backend lê o objeto JSON e valida os campos antes de conferir as credenciais; o POST convencional de formulário continua aceito. Sucesso retorna HTTP 200 com `access_token`, `refresh_token`, `token_type`, `expires_at` e `refresh_expires_at`. Falhas retornam JSON com `erro`: 400 para JSON malformado ou que não seja objeto, 422 para campos inválidos, 401 para credenciais incorretas e 500 para falhas internas, sem expor detalhes. O cliente impede envios duplicados, cancela o login após 15 segundos e mostra mensagens de conexão, tempo limite e resposta inválida. Isso trata falhas de transporte; não impede indisponibilidade do servidor ou interrupções de rede.
 
 As páginas continuam sendo renderizadas por CFML. A navegação autenticada carrega HTML com `fetch` e Bearer, atualiza o histórico e executa os scripts de página. Abrir uma rota protegida diretamente ou recarregá-la entrega somente uma tela de espera pública; o JavaScript busca o conteúdo com o token do storage. Sem token, direciona para `/login`. O handler protegido não executa durante essa resposta inicial. Chamadas sem Bearer ou com token inválido recebem 401. A sessão permanece somente para mensagens flash, sem identidade de autenticação. Formulários protegidos não contêm nem verificam CSRF, pois cookies não concedem acesso.
 
@@ -288,7 +292,7 @@ Para conferir também a reativação por HTTP real, execute `CategoriasHttpSpec`
 curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.specs.integration.CategoriasHttpSpec,tests.specs.integration.CategoriasSpec'
 ```
 
-Após alterar `src/config/Router.cfc`, recarregue o ColdBox local antes de testar a aplicação: `curl -fsS 'http://localhost:10000/healthcheck?fwreinit=1'`. Esse comando exige a configuração local de reinit sem senha e reinicializa a aplicação. As specs usam uma aplicação virtual recém-inicializada; elas podem passar enquanto o servidor ainda mantém rotas antigas em memória. Confira se o corpo do healthcheck é `true`.
+Após alterar `src/config/Router.cfc`, recarregue o ColdBox local pela página inicial antes de testar a aplicação: `curl -fsS 'http://localhost:10000/?fwreinit=1' -o /dev/null`. Esse comando exige a configuração local de reinit sem senha e reinicializa a aplicação. As specs usam uma aplicação virtual recém-inicializada; elas podem passar enquanto o servidor ainda mantém rotas antigas em memória. Após a recarga, confira separadamente se `GET /healthcheck` retorna `true`.
 
 Inspecione o relatório: sucesso HTTP não substitui a conferência dos resultados dos testes. Para mudanças visuais, confira a listagem, os filtros, os formulários e o console do navegador em desktop e mobile.
 

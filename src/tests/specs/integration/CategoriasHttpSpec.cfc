@@ -18,7 +18,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						txCategoria : "Categoria HTTP " & createUUID(), inAtivo : false
 					} );
 					local.categoriaId = local.categoria.getCdCategoria();
-					cfhttp( method = "POST", url = local.baseUrl & "/login", result = "local.login", timeout = 15, redirect = false ) {
+					cfhttp( method = "POST", url = local.baseUrl & "/auth", result = "local.login", timeout = 15, redirect = false ) {
 						cfhttpparam( type = "header", name = "Accept", value = "application/json" );
 						cfhttpparam( type = "header", name = "Content-Type", value = "application/json" );
 						cfhttpparam( type = "body", value = serializeJSON( { txEmail : local.usuario.getTxEmail(), txSenha : "SenhaTesteHttp123!" } ) );
@@ -34,7 +34,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						{ corpo : "{", status : 400 },
 						{ corpo : "[]", status : 400 }
 					] ) {
-						cfhttp( method = "POST", url = local.baseUrl & "/login", result = "local.falhaLogin", timeout = 15, redirect = false ) {
+						cfhttp( method = "POST", url = local.baseUrl & "/auth", result = "local.falhaLogin", timeout = 15, redirect = false ) {
 							cfhttpparam( type = "header", name = "Accept", value = "application/json" );
 							cfhttpparam( type = "header", name = "Content-Type", value = "application/json" );
 							cfhttpparam( type = "body", value = local.caso.corpo );

@@ -68,7 +68,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				local.original = local.interceptor.$getProperty( "erroService", "variables" );
 				local.interceptor.$property( "erroService", "variables", variables.servico );
 				try {
-					local.resultado = post( route = "/login", params = { txEmail : "inválido", txSenha : "" } );
+					local.resultado = post( route = "/auth", params = { txEmail : "inválido", txSenha : "" } );
 					expect( local.resultado.getStatusCode() ).toBe( 422 );
 					expect( arrayLen( variables.enviados ) ).toBe( 1 );
 					expect( variables.enviados[ 1 ].subject ).toInclude( "422" );

@@ -171,7 +171,7 @@
 		botao.disabled = true; alerta.classList.add('d-none');
 		try {
 			const dados = Object.fromEntries(new FormData(login));
-			salvar(await json(await nativeFetch('/login', {
+			salvar(await json(await nativeFetch('/auth', {
 				method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(dados),
 				credentials: 'same-origin', cache: 'no-store', signal: controller.signal
 			})));

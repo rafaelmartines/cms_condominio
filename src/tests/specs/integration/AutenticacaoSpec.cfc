@@ -17,11 +17,19 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				expect( local.evento.getCurrentView() ).toBe( "autenticacao/login" );
 				expect( local.evento.getRenderedContent() ).notToInclude( "csrf" );
 				setup();
-				local.evento = post( route = "/login" );
+				local.evento = post( route = "/auth" );
 				expect( local.evento.getStatusCode() ).toBe( 422 );
 				setup();
-				local.evento = post( route = "/login", params = { txEmail : [], txSenha : {} } );
+				local.evento = post( route = "/auth", params = { txEmail : [], txSenha : {} } );
 				expect( local.evento.getStatusCode() ).toBe( 422 );
+			} );
+			it( "endpoint auth aceita somente POST e responde erros de método em JSON", function() {
+				for ( local.metodo in [ "GET", "PUT", "PATCH", "DELETE" ] ) {
+					setup();
+					local.evento = request( route = "/auth", method = local.metodo );
+					expect( local.evento.getStatusCode() ).toBe( 405 );
+					expect( deserializeJSON( local.evento.getRenderedContent() ).erro ).toBe( "Use POST para entrar." );
+				}
 			} );
 			it( "armazena hashes distintos e verifica senhas com comparação sensível a maiúsculas", function() {
 				local.service = getWireBox().getInstance( "security.SenhaService" );
@@ -38,7 +46,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				local.original = local.auth.authenticate;
 				local.auth.$( "authenticate" ).$throws( type = "Database", message = "Detalhe interno" );
 				try {
-					local.evento = post( route = "/login", params = { txEmail : "teste@example.invalid", txSenha : "SenhaTeste123!" } );
+					local.evento = post( route = "/auth", params = { txEmail : "teste@example.invalid", txSenha : "SenhaTeste123!" } );
 					expect( local.evento.getStatusCode() ).toBe( 500 );
 					expect( deserializeJSON( local.evento.getRenderedContent() ).erro ).toInclude( "Não foi possível" );
 					expect( local.evento.getRenderedContent() ).notToInclude( "Detalhe interno" );
@@ -80,11 +88,11 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						local.service = getWireBox().getInstance( "UsuarioService" );
 						local.service.cadastrar( local.dto );
 						expect( function() { service.cadastrar( dto ); } ).toThrow( "UsuarioDuplicado" );
-						local.evento = post( route = "/login", params = { txEmail : local.email, txSenha : "SenhaErrada123!" } );
+						local.evento = post( route = "/auth", params = { txEmail : local.email, txSenha : "SenhaErrada123!" } );
 						expect( local.evento.getStatusCode() ).toBe( 401 );
 						expect( local.evento.getRenderedContent() ).notToInclude( "SenhaErrada123!" );
 						setup();
-						local.evento = post( route = "/login", params = { txEmail : local.email, txSenha : "SenhaTeste123!" } );
+						local.evento = post( route = "/auth", params = { txEmail : local.email, txSenha : "SenhaTeste123!" } );
 						local.tokens = local.evento.getRenderData().data;
 						local.headers = { Authorization : "Bearer " & local.tokens.access_token };
 						for ( local.rota in [ "/bem-vindo", "/categorias", "/cadastro" ] ) {
