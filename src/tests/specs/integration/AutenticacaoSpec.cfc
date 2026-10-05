@@ -33,6 +33,24 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				expect( local.service.verificar( "senhateste123!", local.hash ) ).toBeFalse();
 				expect( local.service.verificar( "SenhaTeste123!", "invalido" ) ).toBeFalse();
 			} );
+			it( "login retorna JSON em falhas internas e exige POST no evento direto", function() {
+				local.auth = prepareMock( getWireBox().getInstance( "security.JwtAuthenticationService" ) );
+				local.original = local.auth.authenticate;
+				local.auth.$( "authenticate" ).$throws( type = "Database", message = "Detalhe interno" );
+				try {
+					local.evento = post( route = "/login", params = { txEmail : "teste@example.invalid", txSenha : "SenhaTeste123!" } );
+					expect( local.evento.getStatusCode() ).toBe( 500 );
+					expect( deserializeJSON( local.evento.getRenderedContent() ).erro ).toInclude( "Não foi possível" );
+					expect( local.evento.getRenderedContent() ).notToInclude( "Detalhe interno" );
+				} finally {
+					local.auth.authenticate = local.original;
+					local.auth.$property( "authenticate", "variables", local.original );
+				}
+				setup();
+				local.evento = get( route = "/Autenticacao/entrar" );
+					expect( local.evento.getStatusCode() ).toBe( 405 );
+					expect( deserializeJSON( local.evento.getRenderedContent() ).erro ).toInclude( "POST" );
+			} );
 
 			it( "valida cadastro, confirmação de senha e nomes sem validar códigos", function() {
 				local.dto = getWireBox().getInstance( "UsuarioDTO" );

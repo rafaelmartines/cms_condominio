@@ -20,11 +20,31 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 					local.categoriaId = local.categoria.getCdCategoria();
 					cfhttp( method = "POST", url = local.baseUrl & "/login", result = "local.login", timeout = 15, redirect = false ) {
 						cfhttpparam( type = "header", name = "Accept", value = "application/json" );
-						cfhttpparam( type = "formfield", name = "txEmail", value = local.usuario.getTxEmail() );
-						cfhttpparam( type = "formfield", name = "txSenha", value = "SenhaTesteHttp123!" );
+						cfhttpparam( type = "header", name = "Content-Type", value = "application/json" );
+						cfhttpparam( type = "body", value = serializeJSON( { txEmail : local.usuario.getTxEmail(), txSenha : "SenhaTesteHttp123!" } ) );
 					}
 					expect( val( local.login.statusCode ) ).toBe( 200 );
 					local.tokens = deserializeJSON( local.login.fileContent );
+					// O mesmo contrato JSON enviado por autenticacao.js, incluindo entradas inválidas.
+					for ( local.caso in [
+						{ corpo : serializeJSON( { txEmail : local.usuario.getTxEmail(), txSenha : "SenhaErradaHttp123!" } ), status : 401 },
+						{ corpo : serializeJSON( { txEmail : "inexistente-" & local.usuario.getTxEmail(), txSenha : "SenhaTesteHttp123!" } ), status : 401 },
+						{ corpo : serializeJSON( { txEmail : [], txSenha : {} } ), status : 422 },
+						{ corpo : "{}", status : 422 },
+						{ corpo : "{", status : 400 },
+						{ corpo : "[]", status : 400 }
+					] ) {
+						cfhttp( method = "POST", url = local.baseUrl & "/login", result = "local.falhaLogin", timeout = 15, redirect = false ) {
+							cfhttpparam( type = "header", name = "Accept", value = "application/json" );
+							cfhttpparam( type = "header", name = "Content-Type", value = "application/json" );
+							cfhttpparam( type = "body", value = local.caso.corpo );
+						}
+						expect( val( local.falhaLogin.statusCode ) ).toBe( local.caso.status );
+						expect( local.falhaLogin.responseHeader[ "Content-Type" ] ).toInclude( "application/json" );
+						local.erroLogin = deserializeJSON( local.falhaLogin.fileContent );
+						expect( len( local.erroLogin.erro ) GT 0 ).toBeTrue();
+						expect( structKeyExists( local.erroLogin, "access_token" ) ).toBeFalse();
+					}
 					for ( local.tentativa in [ 1, 2 ] ) {
 						cfhttp( method = "PUT", url = local.baseUrl & "/categorias/#local.categoriaId#/reativar", result = "local.resposta", timeout = 15, redirect = false ) {
 							cfhttpparam( type = "header", name = "Accept", value = "application/json" );

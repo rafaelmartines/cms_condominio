@@ -33,7 +33,19 @@ component extends="coldbox.system.EventHandler" {
 
 	public void function entrar( event, rc, prc ) {
 		prepararFormulario( arguments.event, arguments.prc, false );
-		local.dto = populateModel( model = "UsuarioDTO", include = "txEmail,txSenha" );
+		if ( findNoCase( "application/json", arguments.event.getHTTPHeader( "Content-Type", "" ) ?: "" ) ) {
+			try {
+				local.corpo = deserializeJSON( arguments.event.getHTTPContent() );
+			} catch ( any erro ) {
+				throw( type = "LoginJsonInvalido", message = "Envie um objeto JSON válido com e-mail e senha." );
+			}
+			if ( isNull( local.corpo ) OR NOT isStruct( local.corpo ) ) {
+				throw( type = "LoginJsonInvalido", message = "Envie um objeto JSON válido com e-mail e senha." );
+			}
+			local.dto = populateModel( model = "UsuarioDTO", memento = local.corpo, include = "txEmail,txSenha" );
+		} else {
+			local.dto = populateModel( model = "UsuarioDTO", include = "txEmail,txSenha" );
+		}
 		arguments.prc.dados.txEmail = isSimpleValue( local.dto.getTxEmail() ) ? local.dto.getTxEmail() : "";
 		if ( NOT validarFormulario( arguments.event, arguments.prc, local.dto, "login" ) ) return;
 		local.usuario = variables.authenticationService.authenticate( lCase( trim( local.dto.getTxEmail() ) ), local.dto.getTxSenha() );
@@ -80,6 +92,11 @@ component extends="coldbox.system.EventHandler" {
 
 	public void function onError( event, rc, prc, faultAction, exception, eventArguments ) {
 		arguments.prc.erroNotificacao = arguments.exception;
+		if ( arguments.faultAction EQ "entrar" AND arguments.exception.type EQ "InvalidHTTPMethod" ) {
+			arguments.event.setHTTPHeader( name = "Allow", value = "POST" );
+			arguments.event.renderData( type = "json", statusCode = 405, data = { erro : "Use POST para entrar." } );
+			return;
+		}
 		if ( listFindNoCase( "InvalidHTTPMethod,TestController.relocate", arguments.exception.type ) ) {
 			throw( object = arguments.exception );
 		}
@@ -88,7 +105,10 @@ component extends="coldbox.system.EventHandler" {
 		}
 		arguments.prc.erro = "Não foi possível concluir a operação. Tente novamente em instantes.";
 		local.status = 500;
-		if ( arguments.exception.type EQ "InvalidCredentials" ) {
+		if ( arguments.exception.type EQ "LoginJsonInvalido" ) {
+			local.status = 400;
+			arguments.prc.erro = arguments.exception.message;
+		} else if ( arguments.exception.type EQ "InvalidCredentials" ) {
 			local.status = 401;
 			arguments.prc.erro = "E-mail ou senha inválidos.";
 		} else if ( listFindNoCase( "TokenInvalidException,TokenExpiredException,TokenRejectionException,TokenNotFoundException", arguments.exception.type ) ) {

@@ -127,6 +127,8 @@ O cbSecurity 3.8 usa `security.JwtAuthenticationService`, que autentica exclusiv
 
 A interface armazena o par no `localStorage` em `cms.jwt` e envia o acesso em `Authorization` nas chamadas de mesma origem. `fetch`, chamadas jQuery/DataTables e formulários usam esse fluxo; requests externos não recebem o JWT. O storage anterior (`cms.access_token`) e os cookies antigos não autenticam a aplicação: faça novo login após atualizar. O armazenamento local é acessível aos scripts da mesma origem; mantenha somente scripts confiáveis e codifique conteúdo dinâmico.
 
+O login de `autenticacao.js` usa `POST /login` com `Content-Type: application/json` e os campos `txEmail` e `txSenha`. O backend lê o objeto JSON e valida os campos antes de conferir as credenciais; o POST convencional de formulário continua aceito. Sucesso retorna HTTP 200 com `access_token`, `refresh_token`, `token_type`, `expires_at` e `refresh_expires_at`. Falhas retornam JSON com `erro`: 400 para JSON malformado ou que não seja objeto, 422 para campos inválidos, 401 para credenciais incorretas e 500 para falhas internas, sem expor detalhes. O cliente impede envios duplicados, cancela o login após 15 segundos e mostra mensagens de conexão, tempo limite e resposta inválida. Isso trata falhas de transporte; não impede indisponibilidade do servidor ou interrupções de rede.
+
 As páginas continuam sendo renderizadas por CFML. A navegação autenticada carrega HTML com `fetch` e Bearer, atualiza o histórico e executa os scripts de página. Abrir uma rota protegida diretamente ou recarregá-la entrega somente uma tela de espera pública; o JavaScript busca o conteúdo com o token do storage. Sem token, direciona para `/login`. O handler protegido não executa durante essa resposta inicial. Chamadas sem Bearer ou com token inválido recebem 401. A sessão permanece somente para mensagens flash, sem identidade de autenticação. Formulários protegidos não contêm nem verificam CSRF, pois cookies não concedem acesso.
 
 Antes do primeiro uso, aplique o SQL no PostgreSQL do datasource. Configure `PGHOST`, `PGPORT`, `PGDATABASE` e `PGUSER`; forneça a senha pelo mecanismo seguro do `psql` (por exemplo, `.pgpass` com permissões restritas). Na raiz:
@@ -289,6 +291,8 @@ curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.s
 Após alterar `src/config/Router.cfc`, recarregue o ColdBox local antes de testar a aplicação: `curl -fsS 'http://localhost:10000/healthcheck?fwreinit=1'`. Esse comando exige a configuração local de reinit sem senha e reinicializa a aplicação. As specs usam uma aplicação virtual recém-inicializada; elas podem passar enquanto o servidor ainda mantém rotas antigas em memória. Confira se o corpo do healthcheck é `true`.
 
 Inspecione o relatório: sucesso HTTP não substitui a conferência dos resultados dos testes. Para mudanças visuais, confira a listagem, os filtros, os formulários e o console do navegador em desktop e mobile.
+
+`CategoriasHttpSpec` também exercita o login JSON real com credenciais válidas, incorretas e corpo malformado. Para validar o tratamento no JavaScript com respostas e rede simuladas, execute `node src/tests/js/autenticacao.test.cjs` (requer Node.js com `node:test`). Esse teste executa `autenticacao.js` em um ambiente DOM simulado, sem pipeline npm nem envio de e-mail.
 
 Os scripts de formatação chamam `boxlang format`. Confira a disponibilidade do executável `boxlang` antes de usá-los; a presença de `.cfformat.json` não altera o comando executado. Em `src/`:
 

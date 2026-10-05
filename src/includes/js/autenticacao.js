@@ -5,6 +5,11 @@
 	if (window.cmsAuthLifecycle) window.cmsAuthLifecycle.abort();
 	const lifecycle = window.cmsAuthLifecycle = new AbortController();
 	const ouvir = (target, name, callback) => target.addEventListener(name, callback, { signal: lifecycle.signal });
+	const mensagemFalha = (erro) => erro.name === 'AbortError'
+		? 'O servidor demorou para responder. Tente novamente.'
+		: erro instanceof TypeError
+			? 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
+			: erro.message;
 	const menu = document.getElementById('menuLateralDireito');
 	if (menu) ouvir(menu, 'hidden.bs.offcanvas', () => {
 		document.querySelector('[data-bs-target="#menuLateralDireito"]')?.focus({ preventScroll: true });
@@ -51,7 +56,14 @@
 		timer = setTimeout(() => renovar().catch(() => {}), Math.max(1000, tokens.expires_at * 1000 - Date.now() - 30000));
 	};
 	const json = async (response) => {
-		const dados = await response.json();
+		let dados;
+		try { dados = await response.json(); }
+		catch (_) {
+			const erro = new Error('O servidor retornou uma resposta inválida. Tente novamente em instantes.');
+			erro.status = response.status;
+			throw erro;
+		}
+		if (!dados || typeof dados !== 'object' || Array.isArray(dados)) throw new Error('O servidor retornou uma resposta inválida. Tente novamente em instantes.');
 		if (!response.ok) {
 			const erro = new Error(dados.erro || 'Não foi possível concluir a operação.');
 			erro.status = response.status;
@@ -144,7 +156,7 @@
 		if (navegando) return;
 		navegando = true;
 		try { await renderizar(await requisicao(url, { headers: { Accept: 'text/html' }, cache: 'no-store' }), replace); }
-		catch (erro) { if (erro.status === 401) location.assign('/login'); else window.alert(erro.message); }
+		catch (erro) { if (erro.status === 401) location.assign('/login'); else window.alert(mensagemFalha(erro)); }
 		finally { navegando = false; }
 	};
 	window.cmsAuth = { fetch: requisicao, navigate: navegar };
@@ -153,16 +165,26 @@
 		event.preventDefault();
 		const botao = login.querySelector('[type="submit"]');
 		const alerta = document.getElementById('loginErro');
+		if (botao.disabled) return;
+		const controller = new AbortController();
+		const limite = setTimeout(() => controller.abort(), 15000);
 		botao.disabled = true; alerta.classList.add('d-none');
 		try {
 			const dados = Object.fromEntries(new FormData(login));
 			salvar(await json(await nativeFetch('/login', {
-				method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(dados)
+				method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(dados),
+				credentials: 'same-origin', cache: 'no-store', signal: controller.signal
 			})));
+			clearTimeout(limite);
 			await navegar('/bem-vindo');
 			abrirMenu();
-		} catch (erro) { alerta.textContent = erro.message; alerta.classList.remove('d-none'); }
-		finally { botao.disabled = false; }
+		} catch (erro) {
+			alerta.textContent = mensagemFalha(erro);
+			alerta.classList.remove('d-none');
+			alerta.setAttribute('tabindex', '-1');
+			alerta.focus();
+		}
+		finally { clearTimeout(limite); botao.disabled = false; }
 	});
 	const logout = document.querySelector('[data-jwt-logout]');
 	if (logout) ouvir(logout, 'submit', async (event) => {
