@@ -13,7 +13,12 @@
 					</div>
 					<div class="mb-3">
 						<label for="txSenha" class="form-label">Senha</label>
-						<input id="txSenha" name="txSenha" type="password" class="form-control" autocomplete="current-password" maxlength="128" required>
+						<div class="input-group">
+							<input id="txSenha" name="txSenha" type="password" class="form-control" autocomplete="current-password" maxlength="128" required>
+							<button type="button" class="btn btn-outline-secondary" data-alternar-senha aria-controls="txSenha" aria-label="Mostrar senha" title="Mostrar senha">
+								<i class="bi bi-eye" aria-hidden="true"></i>
+							</button>
+						</div>
 					</div>
 					<button class="btn btn-primary w-100" type="submit">Entrar</button>
 				</form>

@@ -152,7 +152,7 @@
         <script src="/includes/vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
         <script src="/includes/vendor/datatables/2.0.8/js/dataTables.min.js"></script>
         <script src="/includes/vendor/datatables/2.0.8/js/dataTables.bootstrap5.min.js"></script>
-        <script src="/includes/js/autenticacao.js"></script>
+        <script src="/includes/js/autenticacao.js?v=20261010-1"></script>
 
         <!-- Lógica de Alternância de Tema -->
         <script>

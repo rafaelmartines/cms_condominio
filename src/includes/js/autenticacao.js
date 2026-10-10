@@ -161,6 +161,22 @@
 	};
 	window.cmsAuth = { fetch: requisicao, navigate: navegar };
 	const login = document.querySelector('[data-jwt-login]');
+	const alternarSenha = login?.querySelector('[data-alternar-senha]');
+	if (alternarSenha) {
+		const senha = login.querySelector('#txSenha');
+		const icone = alternarSenha.querySelector('i');
+		const definirVisibilidade = (visivel) => {
+			senha.type = visivel ? 'text' : 'password';
+			const descricao = visivel ? 'Ocultar senha' : 'Mostrar senha';
+			alternarSenha.setAttribute('aria-label', descricao);
+			alternarSenha.title = descricao;
+			icone.classList.toggle('bi-eye', !visivel);
+			icone.classList.toggle('bi-eye-slash', visivel);
+		};
+		ouvir(alternarSenha, 'click', () => definirVisibilidade(senha.type === 'password'));
+		ouvir(login, 'submit', () => definirVisibilidade(false));
+		ouvir(login, 'reset', () => definirVisibilidade(false));
+	}
 	if (login) ouvir(login, 'submit', async (event) => {
 		event.preventDefault();
 		const botao = login.querySelector('[type="submit"]');
