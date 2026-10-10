@@ -25,7 +25,7 @@
     },
     "dependencies":{
         "coldbox":"8.2.0+35",
-        "quick":"^12.0.12",
+        "quick":"13.0.4",
         "cbpaginator":"^2.8.3",
         "commandbox-bullet-train":"^1.4.2",
         "cbvalidation":"^4.9.1+32",
