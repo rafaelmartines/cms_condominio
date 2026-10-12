@@ -100,10 +100,12 @@
                 <div class="list-group list-group-flush">
                     <a href="/" class="list-group-item list-group-item-action active py-3"><i class="bi bi-house-door me-3"></i>Início</a>
                     <a href="/fornecedores/indicar" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3"></i>Indicar Novo Fornecedor</a>
+					<a href="/faq" class="list-group-item list-group-item-action py-3"><i class="bi bi-question-circle me-3" aria-hidden="true"></i>Perguntas frequentes</a>
                     <cfif getInstance( "security.JwtAuthenticationService" ).isLoggedIn()>
                         <a href="/fornecedores/adicionar" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3" aria-hidden="true"></i>Cadastrar fornecedor</a>
                         <a href="/fornecedores/aprovacao" class="list-group-item list-group-item-action py-3"><i class="bi bi-check-circle me-3" aria-hidden="true"></i>Aprovação de fornecedores</a>
                     <a href="/categorias" class="list-group-item list-group-item-action py-3"><i class="bi bi-tags me-3"></i>Categorias de fornecedores</a>
+						<a href="/administracao/faq" class="list-group-item list-group-item-action py-3"><i class="bi bi-question-circle me-3" aria-hidden="true"></i>Gerenciar perguntas frequentes</a>
                         <a href="/cadastro" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3"></i>Cadastrar usuário</a>
                         <form method="post" action="/logout" data-jwt-logout>
                             <button type="submit" class="list-group-item list-group-item-action py-3 w-100"><i class="bi bi-box-arrow-right me-3"></i>Sair</button>
@@ -152,7 +154,7 @@
         <script src="/includes/vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
         <script src="/includes/vendor/datatables/2.0.8/js/dataTables.min.js"></script>
         <script src="/includes/vendor/datatables/2.0.8/js/dataTables.bootstrap5.min.js"></script>
-        <script src="/includes/js/autenticacao.js?v=20261010-1"></script>
+        <script src="/includes/js/autenticacao.js?v=20261012-1"></script>
 
         <!-- Lógica de Alternância de Tema -->
         <script>

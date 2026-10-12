@@ -133,6 +133,9 @@
 		clearTimeout(timer);
 		history[replace ? 'replaceState' : 'pushState']({}, '', url.href);
 		const pagina = new DOMParser().parseFromString(html, 'text/html');
+		// DOMParser interpreta noscript com scripting desativado. Seus estilos não
+		// devem entrar na página ativa: o fallback do FAQ força respostas abertas.
+		pagina.querySelectorAll('noscript').forEach((elemento) => elemento.remove());
 		lifecycle.abort();
 		document.replaceChild(document.importNode(pagina.documentElement, true), document.documentElement);
 		// Scripts analisados pelo DOMParser são inertes; recria na ordem do layout.

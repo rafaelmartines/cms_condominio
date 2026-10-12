@@ -208,6 +208,38 @@ Os testes exercitam persistência e relacionamento de status, filtros por catego
 
 Referências de implementação: [handlers no ColdBox 8](https://coldbox.ortusbooks.com/the-basics/event-handlers), [QueryExecute no Lucee](https://docs.lucee.org/reference/functions/queryexecute.html), [transações no Lucee](https://docs.lucee.org/reference/tags/transaction.html), compatíveis com o runtime Lucee 6 do projeto.
 
+## Perguntas frequentes (FAQ)
+
+`GET /faq` é público e aparece no menu geral. Mostra somente perguntas ativas, ordenadas por pergunta e ID, com respostas em accordion Bootstrap. O formulário GET filtra pelo texto da pergunta, ignorando maiúsculas e acentos portugueses, e mantém a busca na URL (`/faq?busca=...`). A busca é literal, inclusive para `%`, `_` e aspas, sem depender de `unaccent`. Há mensagens para lista vazia e nenhum resultado. Sem JavaScript, todas as respostas ficam abertas e a busca continua funcionando.
+
+Antes de publicar a funcionalidade, aplique uma vez [database/004_faq.sql](database/004_faq.sql) no PostgreSQL do datasource `cmscondominio`. O script cria `cmscondominio.tb_faq` e seu índice; requer o schema existente e permissão de criação. Não altera tabelas anteriores nem cadastra perguntas automaticamente. Com as variáveis `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER` e `PGPASSWORD` configuradas de forma segura para o banco de destino:
+
+```sh
+psql -X -v ON_ERROR_STOP=1 -f database/004_faq.sql
+```
+
+O menu autenticado inclui **Gerenciar perguntas frequentes**. A administração exige JWT de acesso no header `Authorization`, como os demais cadastros. Qualquer usuário autenticado pode gerenciar FAQ; não há exigência adicional de perfil administrativo. `autenticacao.js` envia o JWT nas navegações e formulários. Cookies de sessão isolados não autorizam gravações, e os formulários seguem o padrão atual sem CSRF.
+
+| Método | Rota | Operação |
+| --- | --- | --- |
+| GET | `/administracao/faq` | Listar perguntas publicadas e excluídas |
+| GET / POST | `/administracao/faq/adicionar` | Formulário / criar |
+| GET / POST | `/administracao/faq/:cdFaq/editar` | Formulário / salvar |
+| GET / POST | `/administracao/faq/:cdFaq/excluir` | Confirmar / excluir logicamente |
+| POST | `/administracao/faq/:cdFaq/reativar` | Reativar e publicar |
+
+Excluir preserva o registro com `in_ativo=false`, permitindo reativação. Editar uma pergunta excluída não a publica novamente. As gravações retornam redirecionamento 303, e o cliente não pode definir a situação, o ID gerado ou timestamps no formulário. Identificadores inválidos retornam 422; registros inexistentes, 404. Perguntas aceitam até 300 caracteres e respostas até 10.000, sem conteúdo vazio. Respostas são texto simples, com quebras de linha preservadas e conteúdo codificado para evitar execução de HTML/JavaScript. Todas as consultas usam parâmetros SQL tipados.
+
+Para testar, com o script aplicado e o ambiente de testes configurado:
+
+```sh
+curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.specs.integration.FaqSpec'
+```
+
+A spec cobre validação, CRUD, exclusão/reativação, busca literal e sem acentos, ordenação, estados vazios, escape de conteúdo, autenticação JWT e restrições de métodos HTTP. Os dados temporários são revertidos por transação; sequences podem avançar. A notificação de erros é simulada, sem envio de e-mail. Após alterar as rotas, recarregue a aplicação local conforme as instruções de teste abaixo.
+
+Referências: [ColdBox 8](https://coldbox.ortusbooks.com/), [handlers](https://coldbox.ortusbooks.com/the-basics/event-handlers) e [QueryExecute no Lucee](https://docs.lucee.org/reference/functions/queryexecute.html), compatíveis com o Lucee 6 usado pelo projeto.
+
 ## Models Quick ORM
 
 As entidades em `src/models/entities/` refletem as tabelas consultadas no banco configurado pelo `.env`. Todas usam o datasource `cmscondominio`, tabelas qualificadas com o schema e `PostgresGrammar@qb`. Obtenha instâncias pelo WireBox; elas mantêm estado por instância e não são singletons.
