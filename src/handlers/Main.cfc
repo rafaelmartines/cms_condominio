@@ -1,16 +1,7 @@
 component extends="coldbox.system.EventHandler" {
 
 	function index( event, rc, prc ) {
-		param arguments.rc.nmFornecedor = arguments.rc[ "filtroNome" ] ?: "";
-		param arguments.rc.cdCategoria  = arguments.rc[ "filtroCategoria" ] ?: "";
-		param arguments.rc.orderColumn  = arguments.rc[ "order[0][column]" ] ?: "0";
-		param arguments.rc.orderDir     = arguments.rc[ "order[0][dir]" ] ?: "asc";
-
-		local.fornecedoresFiltroDTO = populateModel( "FornecedoresFiltroDTO" );
-		arguments.prc.titulo        = "Lista de Fornecedores";
-		arguments.prc.categorias    = getInstance( "CategoriaService" ).obterCategorias();
-		arguments.prc.fornecedores  = getInstance( "FornecedoresService" ).getFornecedores( local.fornecedoresFiltroDTO );
-
+		arguments.prc.titulo = "Principais Serviços";
 		arguments.event.setView( "main/index" );
 	}
 

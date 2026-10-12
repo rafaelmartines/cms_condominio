@@ -18,7 +18,7 @@ function ambiente(responder) {
 		textContent: '', classList: { add: (nome) => classes.add(nome), remove: (nome) => classes.delete(nome) },
 		setAttribute() {}, focus() { this.focado = true; }
 	};
-	const login = { querySelector: () => botao, addEventListener: (nome, callback) => { eventos[nome] = callback; } };
+	const login = { querySelector: (seletor) => seletor === '[type="submit"]' ? botao : null, addEventListener: (nome, callback) => { eventos[nome] = callback; } };
 	const location = { href: 'http://localhost:10000/login', origin: 'http://localhost:10000', pathname: '/login' };
 	const window = {
 		fetch: async (url, opcoes) => {
@@ -92,4 +92,46 @@ test('tempo limite cancela o login e um segundo submit não duplica o POST', asy
 	assert.match(app.alerta.textContent, /demorou para responder/);
 	assert.equal(app.botao.disabled, false);
 	assert.equal(app.timers.size, 0);
+});
+
+test('navegação não importa estilos noscript que forçam respostas do FAQ abertas', async () => {
+	const elementos = [
+		{ tipo: 'accordion', classe: 'accordion-collapse collapse' },
+		{ tipo: 'noscript', estilo: '.accordion-collapse.collapse { display: block; }' },
+		{ tipo: 'noscript', texto: 'JavaScript desativado' },
+		{ tipo: 'style', estilo: '.accordion-body { white-space: pre-wrap; }' }
+	];
+	for (const elemento of elementos) elemento.remove = () => elementos.splice(elementos.indexOf(elemento), 1);
+	let importados;
+	let substituiu = false;
+	const alertas = [];
+	const window = { fetch: async () => ({
+		status: 200, url: 'http://localhost:10000/faq',
+		headers: new Headers({ 'Content-Type': 'text/html' }),
+		text: async () => '<html><body>FAQ com alternativa noscript</body></html>'
+	}), addEventListener() {}, alert: (mensagem) => alertas.push(mensagem) };
+	const document = {
+		body: { dataset: { jwtAutenticado: 'false' } }, documentElement: {},
+		addEventListener() {}, getElementById: () => null, querySelector: () => null,
+		querySelectorAll: () => [],
+		importNode(raiz) { importados = raiz.elementos.map((elemento) => ({ ...elemento })); return {}; },
+		replaceChild() { substituiu = true; }
+	};
+	runInNewContext(codigo, {
+		window, document, navigator: {}, history: { pushState() {} },
+		location: { href: 'http://localhost:10000/', origin: 'http://localhost:10000', pathname: '/' },
+		URL, Headers, Request, AbortController, TypeError, setTimeout, clearTimeout,
+		localStorage: { getItem: () => null },
+		DOMParser: class { parseFromString() { return {
+			documentElement: { elementos },
+			querySelectorAll: (seletor) => seletor === 'noscript' ? elementos.filter((elemento) => elemento.tipo === 'noscript') : []
+		}; } }
+	});
+	await window.cmsAuth.navigate('/faq');
+	assert.deepEqual(alertas, []);
+	assert.equal(substituiu, true);
+	assert.equal(importados.some((elemento) => elemento.estilo?.includes('display: block')), false);
+	assert.equal(importados.some((elemento) => elemento.tipo === 'noscript'), false);
+	assert.equal(importados.find((elemento) => elemento.tipo === 'accordion').classe, 'accordion-collapse collapse');
+	assert.equal(importados.some((elemento) => elemento.tipo === 'style'), true);
 });

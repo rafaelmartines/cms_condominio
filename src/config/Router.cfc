@@ -46,10 +46,18 @@ component {
 
 		get( "/categorias", "Categorias.index" );
 
+		get( "/faq", "Faq.index" );
+		route( "/administracao/faq/adicionar" ).withHandler( "FaqAdmin" ).toAction( { GET : "adicionar", POST : "criar" } );
+		route( "/administracao/faq/:cdFaq/editar" ).withHandler( "FaqAdmin" ).toAction( { GET : "editar", POST : "salvar" } );
+		route( "/administracao/faq/:cdFaq/excluir" ).withHandler( "FaqAdmin" ).toAction( { GET : "confirmarExclusao", POST : "excluir" } );
+		post( "/administracao/faq/:cdFaq/reativar", "FaqAdmin.reativar" );
+		get( "/administracao/faq", "FaqAdmin.index" );
+
 		post( "/api/fornecedores/indicacao", "api.Fornecedores.indicacao" );
 		post( "/api/fornecedores/:cdFornecedor/testemunho", "api.Fornecedores.postTestemunho" );
 		get( "/api/fornecedores", "api.Fornecedores.getFornecedores" );
 
+		get( "/fornecedores", "Fornecedores.index" );
 		get( "/fornecedores/indicar", "Fornecedores.indicar" );
 		route( "/fornecedores/adicionar" ).withHandler( "Fornecedores" ).toAction( { GET : "addFornecedor", POST : "criar" } );
 		get( "/fornecedores/aprovacao", "Fornecedores.aprovacao" );

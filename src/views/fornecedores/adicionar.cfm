@@ -47,7 +47,7 @@
 			</details>
 			<div class="d-grid gap-2 d-sm-flex">
 				<button class="btn btn-primary flex-sm-grow-1" type="submit" <cfif NOT arrayLen( prc.categorias )>disabled</cfif>>Cadastrar fornecedor</button>
-				<a class="btn btn-outline-secondary" href="/">Voltar à lista</a>
+				<a class="btn btn-outline-secondary" href="/fornecedores">Voltar à lista</a>
 			</div>
 		</form>
 	</div>
