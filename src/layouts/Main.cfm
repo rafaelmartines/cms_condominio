@@ -14,7 +14,7 @@
     
     <!-- Bootstrap Icons -->
     <link href="/includes/vendor/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-	<link href="/includes/css/links.css?v=20261012-1" rel="stylesheet">
+	<link href="/includes/css/links.css?v=20261012-2" rel="stylesheet">
 
     <style>
         body {
@@ -66,15 +66,19 @@
                 padding: 0.75rem;
             }
         }
-        .menu-administracao > summary {
-            cursor: pointer;
-            list-style: none;
+        .menu-navegacao {
+            --bs-offcanvas-width: min(100vw, 380px);
         }
-        .menu-administracao > summary::-webkit-details-marker {
-            display: none;
+        .menu-navegacao .list-group-item,
+        .menu-navegacao .accordion-button {
+            min-height: 48px;
+            border: 0;
+            border-radius: var(--bs-border-radius);
+            overflow-wrap: anywhere;
         }
-        .menu-administracao[open] .menu-administracao-seta {
-            transform: rotate(180deg);
+        .menu-navegacao .accordion-button:focus-visible {
+            outline: 3px solid var(--link-neon-color);
+            outline-offset: -3px;
         }
     </style>
 </head>
@@ -101,24 +105,24 @@
         </nav>
 
         <!-- Menu Lateral Direito (Offcanvas) -->
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="menuLateralDireito" aria-labelledby="menuLateralDireitoLabel">
+        <div class="offcanvas offcanvas-end menu-navegacao" tabindex="-1" id="menuLateralDireito" aria-labelledby="menuLateralDireitoLabel">
             <div class="offcanvas-header border-bottom">
                 <h5 class="offcanvas-title fw-bold" id="menuLateralDireitoLabel"><i class="bi bi-list me-2"></i>Navegação</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar menu"></button>
             </div>
-            <div class="offcanvas-body p-0">
+            <nav class="offcanvas-body p-3" aria-label="Menu principal">
                 <!-- Links do Menu -->
-                <div class="list-group list-group-flush">
-                    <a href="/" class="list-group-item list-group-item-action active py-3"><i class="bi bi-house-door me-3"></i>Início</a>
+                <div class="list-group list-group-flush gap-1 accordion" id="menuNavegacao">
+                    <a href="/" class="list-group-item list-group-item-action py-3"><i class="bi bi-house-door me-3"></i>Início</a>
 					<a href="/fornecedores" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-rolodex me-3" aria-hidden="true"></i>Fornecedores</a>
                     <a href="/fornecedores/indicar" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3"></i>Indicar Novo Fornecedor</a>
 					<a href="/faq" class="list-group-item list-group-item-action py-3"><i class="bi bi-question-circle me-3" aria-hidden="true"></i>Perguntas frequentes</a>
                     <cfif getInstance( "security.JwtAuthenticationService" ).isLoggedIn()>
-                        <details class="menu-administracao">
-                            <summary class="list-group-item list-group-item-action py-3 d-flex align-items-center justify-content-between gap-2">
+                        <div class="accordion-item border-0">
+                            <h2 class="accordion-header"><button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="##menuAdministracao" aria-expanded="false" aria-controls="menuAdministracao">
                                 <span class="fw-semibold"><i class="bi bi-gear me-3" aria-hidden="true"></i>Administração</span>
-                                <i class="bi bi-chevron-down menu-administracao-seta" aria-hidden="true"></i>
-                            </summary>
+                            </button></h2>
+                            <div id="menuAdministracao" class="accordion-collapse collapse" data-bs-parent="##menuNavegacao">
                             <div class="list-group list-group-flush ms-4 border-start" role="group" aria-label="Administração">
 								<a href="/administracao/fornecedores" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-rolodex me-3" aria-hidden="true"></i>Gerenciar fornecedores</a>
                                 <a href="/fornecedores/adicionar" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3" aria-hidden="true"></i>Cadastrar fornecedor</a>
@@ -130,13 +134,14 @@
                                     <button type="submit" class="list-group-item list-group-item-action py-3 w-100"><i class="bi bi-box-arrow-right me-3" aria-hidden="true"></i>Sair</button>
                                 </form>
                             </div>
-                        </details>
+                            </div>
+                        </div>
                     <cfelse>
                         <a href="/login" class="list-group-item list-group-item-action py-3"><i class="bi bi-box-arrow-in-right me-3"></i>Entrar</a>
                     </cfif>
                     <a href="https://uclass.com.br/bn/vbstar/" target="_blank" class="list-group-item list-group-item-action py-3"><i class="bi bi-box-arrow-up-right me-3"></i>Manual do Proprietário</a>
                 </div>
-            </div>
+            </nav>
         </div>
 	</header>
 
@@ -175,7 +180,7 @@
         <script src="/includes/vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
         <script src="/includes/vendor/datatables/2.0.8/js/dataTables.min.js"></script>
         <script src="/includes/vendor/datatables/2.0.8/js/dataTables.bootstrap5.min.js"></script>
-        <script src="/includes/js/autenticacao.js?v=20261012-1"></script>
+        <script src="/includes/js/autenticacao.js?v=20261012-2"></script>
 
         <!-- Lógica de Alternância de Tema -->
         <script>

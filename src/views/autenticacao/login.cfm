@@ -1,4 +1,15 @@
 <cfoutput>
+	<div class="modal" id="loginAguarde" tabindex="-1" aria-labelledby="loginAguardeTitulo" aria-describedby="loginAguardeDescricao" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+		<div class="modal-dialog modal-dialog-centered modal-sm">
+			<div class="modal-content">
+				<div class="modal-body text-center p-4">
+					<div class="spinner-border text-primary mb-3" aria-hidden="true"></div>
+					<h2 class="h5" id="loginAguardeTitulo">Login em andamento</h2>
+					<p class="mb-0" id="loginAguardeDescricao" role="status">Por favor, aguarde a conclusão do login.</p>
+				</div>
+			</div>
+		</div>
+	</div>
 	<div class="mx-auto" style="max-width: 30rem;">
 		<div class="card shadow-sm border-0">
 			<div class="card-body p-4">

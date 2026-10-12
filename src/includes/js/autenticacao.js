@@ -188,22 +188,43 @@
 		const controller = new AbortController();
 		const limite = setTimeout(() => controller.abort(), 15000);
 		botao.disabled = true; alerta.classList.add('d-none');
+		login.setAttribute('aria-busy', 'true');
+		let modal;
+		const fecharEspera = () => {
+			if (!modal) return;
+			// Sem fade: libera backdrop, rolagem e foco antes de substituir o documento.
+			modal.hide();
+			modal.dispose();
+			modal = null;
+		};
 		try {
+			const elemento = document.getElementById('loginAguarde');
+			if (elemento && window.bootstrap?.Modal) {
+				modal = window.bootstrap.Modal.getOrCreateInstance(elemento);
+				modal.show();
+			}
 			const dados = Object.fromEntries(new FormData(login));
 			salvar(await json(await nativeFetch('/auth', {
 				method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(dados),
 				credentials: 'same-origin', cache: 'no-store', signal: controller.signal
 			})));
 			clearTimeout(limite);
+			fecharEspera();
 			await navegar('/bem-vindo');
 			abrirMenu();
 		} catch (erro) {
+			fecharEspera();
 			alerta.textContent = mensagemFalha(erro);
 			alerta.classList.remove('d-none');
 			alerta.setAttribute('tabindex', '-1');
 			alerta.focus();
 		}
-		finally { clearTimeout(limite); botao.disabled = false; }
+		finally {
+			fecharEspera();
+			clearTimeout(limite);
+			botao.disabled = false;
+			login.setAttribute('aria-busy', 'false');
+		}
 	});
 	const logout = document.querySelector('[data-jwt-logout]');
 	if (logout) ouvir(logout, 'submit', async (event) => {

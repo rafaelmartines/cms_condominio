@@ -46,8 +46,14 @@ a[href]:focus-visible {
 /* Evita o estado hover persistente em telas de toque. */
 @media (hover: hover) {
 	a[href]:hover {
+		border-color: transparent;
 		text-shadow: 0 0 6px var(--link-neon-glow), 0 0 14px var(--link-neon-soft);
-		box-shadow: 0 0 12px var(--link-neon-soft);
+	}
+
+	/* O brilho acompanha o texto, sem formar um contorno retangular. */
+	a[href]:hover:not(:focus-visible) {
+		box-shadow: none;
+		outline: none;
 	}
 
 	a[href].list-group-item:not(.active):hover,

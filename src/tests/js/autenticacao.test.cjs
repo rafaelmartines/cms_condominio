@@ -14,13 +14,20 @@ function ambiente(responder) {
 	const timers = new Map();
 	const classes = new Set(['d-none']);
 	const botao = { disabled: false };
+	const estadoModal = { aberto: false, aberturas: 0, descartes: 0 };
+	const modal = {
+		show() { estadoModal.aberto = true; estadoModal.aberturas++; },
+		hide() { estadoModal.aberto = false; },
+		dispose() { estadoModal.descartes++; }
+	};
 	const alerta = {
 		textContent: '', classList: { add: (nome) => classes.add(nome), remove: (nome) => classes.delete(nome) },
 		setAttribute() {}, focus() { this.focado = true; }
 	};
-	const login = { querySelector: (seletor) => seletor === '[type="submit"]' ? botao : null, addEventListener: (nome, callback) => { eventos[nome] = callback; } };
+	const login = { setAttribute(nome, valor) { this[nome] = valor; }, querySelector: (seletor) => seletor === '[type="submit"]' ? botao : null, addEventListener: (nome, callback) => { eventos[nome] = callback; } };
 	const location = { href: 'http://localhost:10000/login', origin: 'http://localhost:10000', pathname: '/login' };
 	const window = {
+		bootstrap: { Modal: { getOrCreateInstance: () => modal } },
 		fetch: async (url, opcoes) => {
 			requisicoes.push({ url, opcoes });
 			return requisicoes.length === 1 ? responder(url, opcoes) : new Response('{}', { headers: { 'Content-Type': 'application/json' } });
@@ -29,7 +36,7 @@ function ambiente(responder) {
 	runInNewContext(codigo, {
 		window, document: {
 			body: { dataset: { jwtAutenticado: 'false' } }, addEventListener() {},
-			getElementById: (id) => id === 'loginErro' ? alerta : null,
+			getElementById: (id) => id === 'loginErro' ? alerta : id === 'loginAguarde' ? {} : null,
 			querySelector: (seletor) => seletor === '[data-jwt-login]' ? login : null
 		}, location, navigator: {}, history: {}, URL, Headers, Response, AbortController, TypeError,
 		Request: class extends Request { constructor(url, opcoes) { super(typeof url === 'string' ? new URL(url, location.href) : url, opcoes); } },
@@ -38,7 +45,7 @@ function ambiente(responder) {
 		setTimeout: (callback, prazo) => { const id = timers.size + 1; timers.set(id, { callback, prazo }); return id; },
 		clearTimeout: (id) => timers.delete(id)
 	});
-	return { enviar: () => eventos.submit({ preventDefault() {} }), requisicoes, armazenamento, timers, botao, alerta, classes };
+	return { enviar: () => eventos.submit({ preventDefault() {} }), requisicoes, armazenamento, timers, botao, alerta, classes, estadoModal, login };
 }
 
 test('login envia POST JSON na mesma origem, armazena JWT e libera o botão', async () => {
@@ -52,6 +59,9 @@ test('login envia POST JSON na mesma origem, armazena JWT e libera o botão', as
 	assert.deepEqual(JSON.parse(opcoes.body), { txEmail: 'teste@example.invalid', txSenha: 'SenhaTeste123!' });
 	assert.equal(JSON.parse(app.armazenamento.get('cms.jwt')).access_token, tokens.access_token);
 	assert.equal(app.botao.disabled, false);
+	assert.equal(app.estadoModal.aberto, false);
+	assert.equal(app.estadoModal.descartes, 1);
+	assert.equal(app.login['aria-busy'], 'false');
 });
 
 for (const status of [400, 401, 422, 500]) {
@@ -63,6 +73,8 @@ for (const status of [400, 401, 422, 500]) {
 		assert.equal(app.classes.has('d-none'), false);
 		assert.equal(app.alerta.focado, true);
 		assert.equal(app.armazenamento.has('cms.jwt'), false);
+		assert.equal(app.estadoModal.aberto, false);
+		assert.equal(app.estadoModal.descartes, 1);
 	});
 }
 
@@ -85,13 +97,18 @@ test('tempo limite cancela o login e um segundo submit não duplica o POST', asy
 		opcoes.signal.addEventListener('abort', () => reject(Object.assign(new Error(), { name: 'AbortError' })));
 	}));
 	const envio = app.enviar();
+	assert.equal(app.estadoModal.aberto, true);
+	assert.equal(app.login['aria-busy'], 'true');
 	await app.enviar();
+	assert.equal(app.estadoModal.aberturas, 1);
 	assert.equal(app.requisicoes.length, 1);
 	[...app.timers.values()].find((timer) => timer.prazo === 15000).callback();
 	await envio;
 	assert.match(app.alerta.textContent, /demorou para responder/);
 	assert.equal(app.botao.disabled, false);
 	assert.equal(app.timers.size, 0);
+	assert.equal(app.estadoModal.aberto, false);
+	assert.equal(app.estadoModal.descartes, 1);
 });
 
 test('navegação não importa estilos noscript que forçam respostas do FAQ abertas', async () => {
