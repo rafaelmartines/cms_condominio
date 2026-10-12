@@ -29,6 +29,48 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				expect( local.event.getPrivateValue( "scripts" ) ).toInclude( "/api/fornecedores" );
 				expect( local.event.getRenderedContent() ).toInclude( "Voltar ao início" );
 			} );
+			it( "mantém indicação pública em uma view própria e encaminha para a API de indicação", function() {
+				local.event = get( route = "/fornecedores/indicar" );
+				expect( local.event.getStatusCode() ).toBe( 200 );
+				expect( local.event.getCurrentView() ).toBe( "fornecedores/indicar" );
+				expect( local.event.getPrivateValue( "scripts" ) ).toInclude( "/api/fornecedores/indicacao" );
+				expect( local.event.getRenderedContent() ).notToInclude( 'id="minhaTabela"' );
+			} );
+
+			it( "protege listagem administrativa e cadastro sem restringir a lista pública", function() {
+				for ( local.rota in [ "/administracao/fornecedores", "/fornecedores/adicionar" ] ) {
+					setup();
+					local.event = get( route = local.rota, headers = { Accept : "application/json" } );
+					expect( local.event.getStatusCode() ).toBe( 401 );
+				}
+				setup();
+				local.event = execute( event = "Fornecedores.gestao" );
+				expect( local.event.getRenderData().statusCode ).toBe( 401 );
+			} );
+
+			it( "abre gestão e cadastro em views distintas com JWT válido", function() {
+				transaction {
+					try {
+						local.usuario = getWireBox().getInstance( "Usuario" ).create( {
+							nmUsuario : "Teste rotas fornecedores", txEmail : lCase( createUUID() ) & "@example.invalid", txSenhaHash : "não utilizada neste teste"
+						} );
+						local.tokens = getWireBox().getInstance( "security.JwtAuthenticationService" ).emitirTokens( getWireBox().getInstance( "UsuarioService" ).retrieveUserById( local.usuario.getCdUsuario() ) );
+						local.headers = { Authorization : "Bearer " & local.tokens.access_token, Accept : "text/html" };
+						local.event = get( route = "/administracao/fornecedores", headers = local.headers );
+						expect( local.event.getStatusCode() ).toBe( 200 );
+						expect( local.event.getCurrentView() ).toBe( "fornecedores/gestao" );
+						expect( local.event.getRenderedContent() ).toInclude( 'id="minhaTabela"' );
+						expect( local.event.getRenderedContent() ).toInclude( 'href="/fornecedores/adicionar"' );
+						expect( local.event.getRenderedContent() ).toInclude( 'href="/administracao/fornecedores"' );
+						setup();
+						local.event = get( route = "/fornecedores/adicionar", headers = local.headers );
+						expect( local.event.getStatusCode() ).toBe( 200 );
+						expect( local.event.getCurrentView() ).toBe( "fornecedores/adicionar" );
+						expect( local.event.getRenderedContent() ).toInclude( 'action="/fornecedores/adicionar"' );
+						expect( local.event.getRenderedContent() ).notToInclude( 'id="minhaTabela"' );
+					} finally { transaction action="rollback"; }
+				}
+			} );
 		} );
 	}
 }

@@ -1,10 +1,17 @@
 component extends="coldbox.system.EventHandler" {
-	this.allowedMethods = { index : "GET", getFornecedor : "GET", indicar : "GET", addFornecedor : "GET", criar : "POST", aprovacao : "GET", aprovarFornecedor : "POST", excluirFornecedor : "POST" };
+	this.allowedMethods = { index : "GET", gestao : "GET", getFornecedor : "GET", indicar : "GET", addFornecedor : "GET", criar : "POST", aprovacao : "GET", aprovarFornecedor : "POST", excluirFornecedor : "POST" };
 
 	public void function index( event, rc, prc ) {
 		arguments.prc.titulo = "Lista de Fornecedores";
 		arguments.prc.categorias = getInstance( "CategoriaService" ).obterCategorias();
 		arguments.event.setView( "fornecedores/index" );
+	}
+
+	public void function gestao( event, rc, prc ) secured="true" {
+		arguments.prc.titulo = "Gerenciar fornecedores";
+		arguments.prc.categorias = getInstance( "CategoriaService" ).obterCategorias();
+		arguments.event.setHTTPHeader( name = "Cache-Control", value = "no-store" );
+		arguments.event.setView( "fornecedores/gestao" );
 	}
 
 

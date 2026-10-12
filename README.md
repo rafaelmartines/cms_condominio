@@ -99,6 +99,7 @@ Se o runtime continuar usando rotas antigas após a recarga, reinicie o containe
 | GET | `/login` | Página de entrada |
 | POST | `/auth` | Validação de credenciais e emissão de JWT em JSON |
 | GET | `/fornecedores` | Listagem pública com filtros por nome e categoria |
+| GET | `/administracao/fornecedores` | Listagem protegida com acesso ao cadastro e à aprovação |
 | GET | `/fornecedores/indicar` | Indicação para aprovação, com aviso por e-mail |
 | GET/POST | `/fornecedores/adicionar` | Cadastro no banco (exige login) |
 | GET | `/fornecedores/aprovacao` | Pendências (somente administradores) |
@@ -208,6 +209,8 @@ curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.s
 Os testes exercitam persistência e relacionamento de status, filtros por categoria, visibilidade, CSRF, login, permissão administrativa, revogação e tentativa de envio de status pelo cliente. Os registros temporários são revertidos por transação; sequences podem avançar. Não há envio de e-mail. A busca por nome requer a extensão configurada por `database/003_unaccent.sql`.
 
 Referências de implementação: [handlers no ColdBox 8](https://coldbox.ortusbooks.com/the-basics/event-handlers), [QueryExecute no Lucee](https://docs.lucee.org/reference/functions/queryexecute.html), [transações no Lucee](https://docs.lucee.org/reference/tags/transaction.html), compatíveis com o runtime Lucee 6 do projeto.
+
+As páginas de fornecedores têm views distintas: `/fornecedores` usa `fornecedores/index`, `/administracao/fornecedores` usa `fornecedores/gestao`, `/fornecedores/adicionar` usa `fornecedores/adicionar` e `/fornecedores/indicar` usa `fornecedores/indicar`. As duas listagens compartilham somente a tabela e seus scripts em `_listagem.cfm`, consultando fornecedores aprovados pela API pública. A versão protegida exige JWT e oferece acesso ao cadastro e à aprovação no menu Administração. Registre as rotas específicas antes de `/fornecedores`: o roteamento por prefixo pode capturar cadastro, indicação e detalhes se a listagem vier primeiro.
 
 ## Perguntas frequentes (FAQ)
 

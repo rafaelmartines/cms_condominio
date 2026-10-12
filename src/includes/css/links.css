@@ -1,0 +1,74 @@
+:root,
+[data-bs-theme="light"] {
+	--link-neon-color: #0646a6;
+	--link-neon-glow: rgba(0, 91, 210, 0.32);
+	--link-neon-soft: rgba(0, 91, 210, 0.12);
+	--link-neon-filled-text: #ffffff;
+}
+
+[data-bs-theme="dark"] {
+	--link-neon-color: #80dfff;
+	--link-neon-glow: rgba(50, 210, 255, 0.55);
+	--link-neon-soft: rgba(50, 210, 255, 0.18);
+	--link-neon-filled-text: #05242f;
+}
+
+a[href] {
+	text-shadow: 0 0 8px var(--link-neon-soft);
+	transition: color 180ms ease, background-color 180ms ease,
+		border-color 180ms ease, text-shadow 180ms ease, box-shadow 180ms ease;
+}
+
+/* Mantém as cores semânticas dos botões e o contraste dos itens ativos. */
+a[href]:not(.btn):not(.list-group-item):not(.navbar-brand) {
+	color: var(--link-neon-color) !important;
+	text-underline-offset: 0.2em;
+}
+
+a[href].btn-outline-primary {
+	--bs-btn-color: var(--link-neon-color);
+	--bs-btn-border-color: var(--link-neon-color);
+	--bs-btn-hover-bg: var(--link-neon-color);
+	--bs-btn-hover-border-color: var(--link-neon-color);
+	--bs-btn-hover-color: var(--link-neon-filled-text);
+	--bs-btn-active-bg: var(--link-neon-color);
+	--bs-btn-active-border-color: var(--link-neon-color);
+	--bs-btn-active-color: var(--link-neon-filled-text);
+}
+
+a[href]:focus-visible {
+	outline: 3px solid var(--link-neon-color);
+	outline-offset: 3px;
+	text-shadow: 0 0 6px var(--link-neon-glow), 0 0 14px var(--link-neon-soft);
+	box-shadow: 0 0 12px var(--link-neon-soft);
+}
+
+/* Evita o estado hover persistente em telas de toque. */
+@media (hover: hover) {
+	a[href]:hover {
+		text-shadow: 0 0 6px var(--link-neon-glow), 0 0 14px var(--link-neon-soft);
+		box-shadow: 0 0 12px var(--link-neon-soft);
+	}
+
+	a[href].list-group-item:not(.active):hover,
+	a[href].navbar-brand:hover {
+		color: var(--link-neon-color);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	a[href] {
+		transition: none;
+	}
+}
+
+@media (forced-colors: active) {
+	a[href] {
+		text-shadow: none;
+		box-shadow: none;
+	}
+
+	a[href]:focus-visible {
+		outline-color: Highlight;
+	}
+}

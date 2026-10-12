@@ -57,13 +57,15 @@ component {
 		post( "/api/fornecedores/:cdFornecedor/testemunho", "api.Fornecedores.postTestemunho" );
 		get( "/api/fornecedores", "api.Fornecedores.getFornecedores" );
 
-		get( "/fornecedores", "Fornecedores.index" );
+		get( "/administracao/fornecedores", "Fornecedores.gestao" );
 		get( "/fornecedores/indicar", "Fornecedores.indicar" );
 		route( "/fornecedores/adicionar" ).withHandler( "Fornecedores" ).toAction( { GET : "addFornecedor", POST : "criar" } );
 		get( "/fornecedores/aprovacao", "Fornecedores.aprovacao" );
 		post( "/fornecedores/:cdFornecedor/aprovar", "Fornecedores.aprovarFornecedor" );
 		post( "/fornecedores/:cdFornecedor/excluir", "Fornecedores.excluirFornecedor" );
 		get( "/fornecedores/:cdFornecedor", "Fornecedores.getFornecedor" );
+		// A listagem vem após as rotas específicas para não capturar seus prefixos.
+		get( "/fornecedores", "Fornecedores.index" );
 
 		// Conventions-Based Routing
 		route( ":handler/:action?" ).end();

@@ -14,6 +14,7 @@
     
     <!-- Bootstrap Icons -->
     <link href="/includes/vendor/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+	<link href="/includes/css/links.css?v=20261012-1" rel="stylesheet">
 
     <style>
         body {
@@ -119,6 +120,7 @@
                                 <i class="bi bi-chevron-down menu-administracao-seta" aria-hidden="true"></i>
                             </summary>
                             <div class="list-group list-group-flush ms-4 border-start" role="group" aria-label="Administração">
+								<a href="/administracao/fornecedores" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-rolodex me-3" aria-hidden="true"></i>Gerenciar fornecedores</a>
                                 <a href="/fornecedores/adicionar" class="list-group-item list-group-item-action py-3"><i class="bi bi-person-plus me-3" aria-hidden="true"></i>Cadastrar fornecedor</a>
                                 <a href="/fornecedores/aprovacao" class="list-group-item list-group-item-action py-3"><i class="bi bi-check-circle me-3" aria-hidden="true"></i>Aprovação de fornecedores</a>
                                 <a href="/categorias" class="list-group-item list-group-item-action py-3"><i class="bi bi-tags me-3" aria-hidden="true"></i>Categorias de fornecedores</a>
