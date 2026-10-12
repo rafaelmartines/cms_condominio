@@ -57,6 +57,7 @@ component {
 		post( "/api/fornecedores/:cdFornecedor/testemunho", "api.Fornecedores.postTestemunho" );
 		get( "/api/fornecedores", "api.Fornecedores.getFornecedores" );
 
+		get( "/fornecedores", "Fornecedores.index" );
 		get( "/fornecedores/indicar", "Fornecedores.indicar" );
 		route( "/fornecedores/adicionar" ).withHandler( "Fornecedores" ).toAction( { GET : "addFornecedor", POST : "criar" } );
 		get( "/fornecedores/aprovacao", "Fornecedores.aprovacao" );

@@ -98,6 +98,7 @@ Se o runtime continuar usando rotas antigas após a recarga, reinicie o containe
 | GET | `/` | Listagem de fornecedores com filtros |
 | GET | `/login` | Página de entrada |
 | POST | `/auth` | Validação de credenciais e emissão de JWT em JSON |
+| GET | `/fornecedores` | Listagem pública com filtros por nome e categoria |
 | GET | `/fornecedores/indicar` | Indicação para aprovação, com aviso por e-mail |
 | GET/POST | `/fornecedores/adicionar` | Cadastro no banco (exige login) |
 | GET | `/fornecedores/aprovacao` | Pendências (somente administradores) |

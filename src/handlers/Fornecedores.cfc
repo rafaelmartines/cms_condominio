@@ -1,5 +1,11 @@
 component extends="coldbox.system.EventHandler" {
-	this.allowedMethods = { getFornecedor : "GET", indicar : "GET", addFornecedor : "GET", criar : "POST", aprovacao : "GET", aprovarFornecedor : "POST", excluirFornecedor : "POST" };
+	this.allowedMethods = { index : "GET", getFornecedor : "GET", indicar : "GET", addFornecedor : "GET", criar : "POST", aprovacao : "GET", aprovarFornecedor : "POST", excluirFornecedor : "POST" };
+
+	public void function index( event, rc, prc ) {
+		arguments.prc.titulo = "Lista de Fornecedores";
+		arguments.prc.categorias = getInstance( "CategoriaService" ).obterCategorias();
+		arguments.event.setView( "fornecedores/index" );
+	}
 
 
 	public any function getFornecedor( event, rc, prc ) {
