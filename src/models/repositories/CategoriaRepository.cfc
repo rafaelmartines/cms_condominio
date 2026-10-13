@@ -3,7 +3,11 @@ component singleton extends="BaseRepository" {
 	property name="categoriaProvider" inject="provider:Categoria";
 
 	public array function listarParaGestao() {
-		return variables.categoriaProvider.$get().orderBy( "txCategoria" ).orderBy( "cdCategoria" ).get();
+		return variables.categoriaProvider
+			.$get()
+			.orderBy( "txCategoria" )
+			.orderBy( "cdCategoria" )
+			.get();
 	}
 
 	public any function obterPorId( required numeric cdCategoria ) {
@@ -12,27 +16,35 @@ component singleton extends="BaseRepository" {
 
 	public void function criar( required string txCategoria ) {
 		var instante = now();
-		variables.categoriaProvider.$get().create( {
-			txCategoria : arguments.txCategoria,
-			inAtivo : true,
-			tsCriadoEm : instante,
-			tsAtualizado : instante
-		} );
+		variables.categoriaProvider
+			.$get()
+			.create( {
+				txCategoria  : arguments.txCategoria,
+				inAtivo      : true,
+				tsCriadoEm   : instante,
+				tsAtualizado : instante
+			} );
 	}
 
 	public boolean function editar( required numeric cdCategoria, required string txCategoria ) {
-		var resultado = variables.categoriaProvider.$get().where( "cdCategoria", arguments.cdCategoria ).updateAll( {
-			txCategoria : arguments.txCategoria,
-			tsAtualizado : now()
-		} );
+		var resultado = variables.categoriaProvider
+			.$get()
+			.where( "cdCategoria", arguments.cdCategoria )
+			.updateAll( {
+				txCategoria  : arguments.txCategoria,
+				tsAtualizado : now()
+			} );
 		return resultado.result.recordCount > 0;
 	}
 
 	public boolean function inativar( required numeric cdCategoria ) {
-		var resultado = variables.categoriaProvider.$get().where( "cdCategoria", arguments.cdCategoria ).updateAll( {
-			inAtivo : false,
-			tsAtualizado : now()
-		} );
+		var resultado = variables.categoriaProvider
+			.$get()
+			.where( "cdCategoria", arguments.cdCategoria )
+			.updateAll( {
+				inAtivo      : false,
+				tsAtualizado : now()
+			} );
 		return resultado.result.recordCount > 0;
 	}
 
@@ -41,10 +53,10 @@ component singleton extends="BaseRepository" {
 	}
 
 	public boolean function reativar( required numeric cdCategoria ) {
-		local.resultado = variables.categoriaProvider.$get().where( "cdCategoria", arguments.cdCategoria ).updateAll( {
-			inAtivo : true,
-			tsAtualizado : now()
-		} );
+		local.resultado = variables.categoriaProvider
+			.$get()
+			.where( "cdCategoria", arguments.cdCategoria )
+			.updateAll( { inAtivo : true, tsAtualizado : now() } );
 		return local.resultado.result.recordCount GT 0;
 	}
 

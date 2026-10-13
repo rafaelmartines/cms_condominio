@@ -70,10 +70,10 @@ component singleton {
 
 
 	public boolean function postIndicacao( required IndicacaoDTO indicacaoDTO ) {
-		local.dados = arguments.indicacaoDTO.validar();
+		local.dados      = arguments.indicacaoDTO.validar();
 		local.corpoEmail = {
 			subject : "Fornecedor aguardando aprovação",
-			html : "<h1>Nova indicação de fornecedor</h1><p>O fornecedor <strong>#encodeForHTML( local.dados.nmFornecedor )#</strong> está aguardando aprovação.</p><p>Acesse o painel de aprovação de fornecedores para revisar a indicação.</p>"
+			html    : "<h1>Nova indicação de fornecedor</h1><p>O fornecedor <strong>#encodeForHTML( local.dados.nmFornecedor )#</strong> está aguardando aprovação.</p><p>Acesse o painel de aprovação de fornecedores para revisar a indicação.</p>"
 		};
 		// Uma falha no aviso permite repetir o envio sem deixar uma indicação duplicada.
 		transaction {
@@ -127,19 +127,27 @@ component singleton {
 	public void function aprovarFornecedor( required any cdFornecedor ) {
 		validarId( arguments.cdFornecedor );
 		if ( NOT variables.fornecedoresRepository.aprovarFornecedor( arguments.cdFornecedor ) ) {
-			throw( type = "FornecedorNaoAguardando", message = "Fornecedor inexistente ou que não está mais aguardando aprovação." );
+			throw(
+				type    = "FornecedorNaoAguardando",
+				message = "Fornecedor inexistente ou que não está mais aguardando aprovação."
+			);
 		}
 	}
 
 	public void function excluirFornecedor( required any cdFornecedor ) {
 		validarId( arguments.cdFornecedor );
 		if ( NOT variables.fornecedoresRepository.excluirFornecedor( arguments.cdFornecedor ) ) {
-			throw( type = "FornecedorNaoAguardando", message = "Fornecedor inexistente ou que não está mais aguardando aprovação." );
+			throw(
+				type    = "FornecedorNaoAguardando",
+				message = "Fornecedor inexistente ou que não está mais aguardando aprovação."
+			);
 		}
 	}
 
 	private void function validarId( required any id ) {
-		if ( NOT isSimpleValue( arguments.id ) OR NOT reFind( "^[1-9][0-9]{0,9}$", arguments.id ) OR arguments.id GT 2147483647 ) {
+		if (
+			NOT isSimpleValue( arguments.id ) OR NOT reFind( "^[1-9][0-9]{0,9}$", arguments.id ) OR arguments.id GT 2147483647
+		) {
 			throw( type = "FornecedorInvalido", message = "Identificador de fornecedor inválido." );
 		}
 	}

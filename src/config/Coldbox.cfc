@@ -141,7 +141,14 @@ component {
 		 *
 		 * }
 		 */
-		variables.moduleSettings = {};
+		variables.moduleSettings = {
+			quick : {
+				defaultGrammar : getSystemSetting( "QUICK_GRAMMAR", "PostgresGrammar@qb" ),
+				defaultQueryOptions : {
+					datasource : getSystemSetting( "QUICK_DATASOURCE", "cmscondominio" )
+				}
+			}
+		};
 
 		/**
 		 * --------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 component singleton implements="cbsecurity.interfaces.IUserService" {
 
 	property name="usuarioRepository" inject="repositories.UsuarioRepository";
-	property name="senhaService" inject="security.SenhaService";
+	property name="senhaService"      inject="security.SenhaService";
 	property name="validationManager" inject="ValidationManager@cbvalidation";
 
 	public void function cadastrar( required any usuarioDTO ) {

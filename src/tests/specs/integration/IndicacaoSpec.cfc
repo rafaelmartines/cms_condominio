@@ -74,6 +74,28 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				} finally { getWireBox().getInstance( "Categoria" ).findOrFail( local.categoria ).delete(); }
 			} );
 
+			it( "confirma a indicação completa e exclui também o comentário via Quick", function() {
+				local.categoria = getWireBox().getInstance( "Categoria" ).create( { txCategoria : "Teste commit indicação", inAtivo : true } ).getCdCategoria();
+				local.repository = getWireBox().getInstance( "FornecedoresRepository" );
+				local.id = 0;
+				try {
+					local.dados = novoDTO( local.categoria ).validar();
+					local.dados.nmFornecedor = "Commit " & createUUID();
+					expect( local.repository.addIndicacao( local.dados ) ).toBeTrue();
+					local.id = getWireBox().getInstance( "Fornecedor" ).where( "nmFornecedor", local.dados.nmFornecedor ).firstOrFail().getCdFornecedor();
+					expect( local.repository.getComentariosPorFornecedor( local.id ) ).toHaveLength( 1 );
+					expect( local.repository.getMedia( local.id ).media ).toBe( 5 );
+					expect( local.repository.excluirFornecedor( local.id ) ).toBeTrue();
+					expect( local.repository.getComentariosPorFornecedor( local.id ) ).toBeEmpty();
+					expect( getWireBox().getInstance( "FornecedorCategoria" ).where( "cdFornecedor", local.id ).get() ).toBeEmpty();
+					expect( getWireBox().getInstance( "Fornecedor" ).where( "cdFornecedor", local.id ).get() ).toBeEmpty();
+					expect( local.repository.excluirFornecedor( local.id ) ).toBeFalse();
+				} finally {
+					if ( local.id GT 0 ) local.repository.excluirFornecedor( local.id );
+					getWireBox().getInstance( "Categoria" ).findOrFail( local.categoria ).delete();
+				}
+			} );
+
 			it( "rejeita apartamento inválido antes de persistir", function() {
 				local.dto = novoDTO( 1 );
 				local.dto.setNrApartamento( "0" );

@@ -5,17 +5,17 @@ component accessors="true" {
 
 	this.constraints = {
 		txCategoria : {
-			required : true,
-			type : "string",
-			size : "1..100",
+			required        : true,
+			type            : "string",
+			size            : "1..100",
 			requiredMessage : "Informe um nome de categoria com 1 a 100 caracteres.",
-			typeMessage : "Informe um nome de categoria com 1 a 100 caracteres.",
-			sizeMessage : "Informe um nome de categoria com 1 a 100 caracteres."
+			typeMessage     : "Informe um nome de categoria com 1 a 100 caracteres.",
+			sizeMessage     : "Informe um nome de categoria com 1 a 100 caracteres."
 		}
 	};
 
 	this.constraintProfiles = {
-		criar : "txCategoria",
+		criar  : "txCategoria",
 		editar : "txCategoria"
 	};
 

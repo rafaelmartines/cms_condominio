@@ -1,13 +1,17 @@
 component
-	extends="BaseEntidade"
+	extends  ="BaseEntidade"
 	accessors="true"
-	table="cmscondominio.tb_fornecedor_categoria"
-	datasource="cmscondominio"
-	grammar="PostgresGrammar@qb"
+	table    ="cmscondominio.tb_fornecedor_categoria"
 {
 
-	property name="cdFornecedor" column="cd_fornecedor" sqltype="cf_sql_integer";
-	property name="cdCategoria" column="cd_categoria" sqltype="cf_sql_integer";
+	property
+		name   ="cdFornecedor"
+		column ="cd_fornecedor"
+		sqltype="cf_sql_integer";
+	property
+		name   ="cdCategoria" 
+		column ="cd_categoria" 
+		sqltype="cf_sql_integer";
 
 	variables._key = [ "cdFornecedor", "cdCategoria" ];
 
@@ -16,11 +20,19 @@ component
 	}
 
 	public any function fornecedor() {
-		return belongsTo( "Fornecedor", "cdFornecedor", "cdFornecedor" );
+		return belongsTo(
+			"Fornecedor",
+			"cdFornecedor",
+			"cdFornecedor"
+		);
 	}
 
 	public any function categoria() {
-		return belongsTo( "Categoria", "cdCategoria", "cdCategoria" );
+		return belongsTo(
+			"Categoria",
+			"cdCategoria",
+			"cdCategoria"
+		);
 	}
 
 }

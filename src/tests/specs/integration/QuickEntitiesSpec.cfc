@@ -6,6 +6,34 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				setup();
 			} );
 
+			it( "herda datasource e grammar do módulo em todas as entidades", function() {
+				local.configuracao = getController().getSetting( "modules" ).quick.settings;
+				for ( local.nome in [ "Fornecedor", "Categoria", "Comentario", "FornecedorCategoria", "Usuario", "StatusFornecedor", "entities.Faq" ] ) {
+					local.entidade = getWireBox().getInstance( local.nome );
+					local.metadata = getMetadata( local.entidade );
+					expect( structKeyExists( local.metadata, "datasource" ) ).toBeFalse();
+					expect( structKeyExists( local.metadata, "grammar" ) ).toBeFalse();
+					local.builder = local.entidade.newQuery();
+					expect( local.builder.getDefaultOptions().datasource ).toBe( local.configuracao.defaultQueryOptions.datasource );
+					expect( getMetadata( local.builder.getGrammar() ).name ).toBe(
+						getMetadata( getWireBox().getInstance( local.configuracao.defaultGrammar ) ).name
+					);
+				}
+			} );
+
+			it( "permite configurar datasource e grammar sem alterar entidades", function() {
+				local.config = prepareMock( new app.config.Coldbox() );
+				local.config.$( "getSystemSetting" ).$callback( function( name, defaultValue ) {
+					if ( arguments.name EQ "QUICK_DATASOURCE" ) return "datasourceAlternativo";
+					if ( arguments.name EQ "QUICK_GRAMMAR" ) return "MySQLGrammar@qb";
+					return arguments.defaultValue;
+				} );
+				local.config.configure();
+				local.modulos = local.config.$getProperty( "moduleSettings", "variables" );
+				expect( local.modulos.quick.defaultQueryOptions.datasource ).toBe( "datasourceAlternativo" );
+				expect( local.modulos.quick.defaultGrammar ).toBe( "MySQLGrammar@qb" );
+			} );
+
 			it( "consulta todas as colunas mapeadas e aceita resultado vazio", function() {
 				for ( var nome in [ "Fornecedor", "Categoria", "Comentario", "FornecedorCategoria", "Usuario" ] ) {
 					var entidade = getWireBox().getInstance( nome );

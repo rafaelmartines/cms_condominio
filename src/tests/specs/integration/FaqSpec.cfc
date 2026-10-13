@@ -3,6 +3,9 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 		describe( "FAQ público e administração", function() {
 			beforeEach( function() {
 				setup();
+				variables.idsFaq = [];
+				variables.idsUsuarios = [];
+				variables.perguntaCriadaPeloHandler = "";
 				prepareMock( getWireBox().getInstance( "ErroService" ) ).$( "notificar" );
 			} );
 
@@ -34,11 +37,10 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			} );
 
 			it( "persiste o ciclo completo e preserva a exclusão durante a edição", function() {
-				transaction {
 					try {
 						local.service = getWireBox().getInstance( "FaqService" );
 						local.dto = novoDTO();
-						local.id = local.service.criar( local.dto );
+						local.id = criarFaq( local.dto );
 						expect( local.service.obterPergunta( local.id ).txPergunta ).toBe( trim( local.dto.getTxPergunta() ) );
 						expect( local.service.listarPublicas( trim( local.dto.getTxPergunta() ) ) ).toHaveLength( 1 );
 						local.service.excluir( local.id );
@@ -50,23 +52,21 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						for ( local.tentativa in [ 1, 2 ] ) local.service.reativar( local.id );
 						expect( local.service.obterPergunta( local.id ).inAtivo ).toBeTrue();
 						expect( local.service.listarPublicas( trim( local.dto.getTxPergunta() ) ) ).toHaveLength( 1 );
-					} finally { transaction action="rollback"; }
-				}
+					} finally { limparDados(); }
 			} );
 
 			it( "busca por pergunta sem distinguir acentos, trata texto literal e ordena", function() {
-				transaction {
 					try {
 						local.service = getWireBox().getInstance( "FaqService" );
 						local.sufixo = createUUID();
 						local.dto = novoDTO();
 						local.dto.setTxPergunta( "B São José 100%_ " & local.sufixo );
 						local.dto.setTxResposta( "Resposta exclusiva " & local.sufixo );
-						local.service.criar( local.dto );
+						criarFaq( local.dto );
 						local.dto.setTxPergunta( "A São José 100%_ " & local.sufixo );
-						local.service.criar( local.dto );
+						criarFaq( local.dto );
 						local.dto.setTxPergunta( "C São José 100%_ " & local.sufixo );
-						local.idExcluida = local.service.criar( local.dto );
+						local.idExcluida = criarFaq( local.dto );
 						local.service.excluir( local.idExcluida );
 						local.resultado = local.service.listarPublicas( "SAO JOSE 100%_ " & local.sufixo );
 						expect( local.resultado ).toHaveLength( 2 );
@@ -77,8 +77,22 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						expect( local.service.listarPublicas( "inexistente " & local.sufixo ) ).toBeEmpty();
 						local.gestao = local.service.listarParaGestao().filter( function( pergunta ) { return pergunta.cdFaq EQ idExcluida; } );
 						expect( local.gestao ).toHaveLength( 1 );
-					} finally { transaction action="rollback"; }
-				}
+					} finally { limparDados(); }
+			} );
+
+			it( "reverte falhas de integridade e permite operações posteriores", function() {
+				local.repository = getWireBox().getInstance( "repositories.FaqRepository" );
+				local.pergunta = "Falha " & createUUID();
+				try {
+					expect( function() { repository.criar( pergunta, "" ); } ).toThrow();
+					expect( local.repository.listar( busca = local.pergunta ) ).toBeEmpty();
+					local.id = criarFaq( novoDTO() );
+					local.anterior = local.repository.obterPorId( local.id )[ 1 ];
+					local.caso = { repository : local.repository, id : local.id };
+					expect( function() { caso.repository.editar( caso.id, "", "Resposta" ); } ).toThrow();
+					expect( local.repository.obterPorId( local.id )[ 1 ] ).toBe( local.anterior );
+					expect( local.repository.definirAtivo( local.id, false ) ).toBeTrue();
+				} finally { limparDados(); }
 			} );
 
 			it( "trata identificadores inexistentes sem acessar o primeiro elemento vazio", function() {
@@ -91,13 +105,12 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			} );
 
 			it( "consulta publicamente, escapa conteúdo e mantém somente o menu público sem login", function() {
-				transaction {
 					try {
 						local.dto = novoDTO();
 						local.sufixo = createUUID();
 						local.dto.setTxPergunta( "<script>pergunta</script> " & local.sufixo );
 						local.dto.setTxResposta( "<img src=x onerror=alert(1)>" );
-						getWireBox().getInstance( "FaqService" ).criar( local.dto );
+						criarFaq( local.dto );
 						local.event = get( route = "/faq", params = { busca : local.sufixo } );
 						expect( local.event.getStatusCode() ).toBe( 200 );
 						expect( local.event.getRenderedContent() ).toInclude( "accordion-button collapsed" );
@@ -105,8 +118,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						expect( local.event.getRenderedContent() ).notToInclude( "<img src=x onerror=alert(1)>" );
 						expect( local.event.getRenderedContent() ).toInclude( 'href="/faq"' );
 						expect( local.event.getRenderedContent() ).notToInclude( 'href="/administracao/faq"' );
-					} finally { transaction action="rollback"; }
-				}
+					} finally { limparDados(); }
 			} );
 
 			it( "mostra estado vazio e rejeita busca complexa", function() {
@@ -135,11 +147,10 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 			} );
 
 			it( "gerencia com JWT válido, preserva os campos no erro e ignora estado enviado pelo cliente", function() {
-				transaction {
 					try {
 						local.headers = autenticar();
 						local.dto = novoDTO();
-						local.id = getWireBox().getInstance( "FaqService" ).criar( local.dto );
+						local.id = criarFaq( local.dto );
 						local.event = get( route = "/administracao/faq", headers = local.headers );
 						expect( local.event.getRenderedContent() ).toInclude( 'href="/administracao/faq"' );
 						setup();
@@ -153,6 +164,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						expect( local.event.getStatusCode() ).toBe( 422 );
 						setup();
 						local.nome = "Nova " & createUUID();
+						variables.perguntaCriadaPeloHandler = local.nome;
 						local.event = post( route = "/administracao/faq/adicionar", headers = local.headers, params = { txPergunta : local.nome, txResposta : "Resposta", inAtivo : false, cdFaq : 2147483647 }, renderResults = false );
 						expect( local.event.getValue( "relocate_statusCode", 0 ) ).toBe( 303 );
 						expect( getWireBox().getInstance( "FaqService" ).listarPublicas( local.nome ) ).toHaveLength( 1 );
@@ -169,12 +181,10 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 						setup();
 						local.event = get( route = "/administracao/faq/2147483647/editar", headers = local.headers );
 						expect( local.event.getStatusCode() ).toBe( 404 );
-					} finally { transaction action="rollback"; }
-				}
+					} finally { limparDados(); }
 			} );
 
 			it( "recusa gravação por GET inclusive nas rotas convencionais", function() {
-				transaction {
 					try {
 						local.headers = autenticar();
 						for ( local.acao in [ "criar", "salvar", "excluir", "reativar" ] ) {
@@ -182,10 +192,28 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 							local.event = get( route = "/FaqAdmin/#local.acao#", headers = local.headers );
 							expect( local.event.getStatusCode() ).toBe( 405 );
 						}
-					} finally { transaction action="rollback"; }
-				}
+					} finally { limparDados(); }
 			} );
 		} );
+	}
+
+	private numeric function criarFaq( required any dto ) {
+		local.id = getWireBox().getInstance( "FaqService" ).criar( arguments.dto );
+		variables.idsFaq.append( local.id );
+		return local.id;
+	}
+
+	// Commits no repository impedem usar rollback externo como limpeza dos testes.
+	private void function limparDados() {
+		for ( local.id in variables.idsFaq ) {
+			getWireBox().getInstance( "entities.Faq" ).findOrFail( local.id ).delete();
+		}
+		if ( len( variables.perguntaCriadaPeloHandler ) ) {
+			getWireBox().getInstance( "entities.Faq" ).where( "txPergunta", variables.perguntaCriadaPeloHandler ).deleteAll();
+		}
+		for ( local.id in variables.idsUsuarios ) {
+			getWireBox().getInstance( "Usuario" ).findOrFail( local.id ).delete();
+		}
 	}
 
 	private any function novoDTO() {
@@ -199,6 +227,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 		local.usuario = getWireBox().getInstance( "Usuario" ).create( {
 			nmUsuario : "Teste FAQ", txEmail : lCase( createUUID() ) & "@example.invalid", txSenhaHash : "não utilizada neste teste"
 		} );
+		variables.idsUsuarios.append( local.usuario.getCdUsuario() );
 		local.auth = getWireBox().getInstance( "security.JwtAuthenticationService" );
 		local.tokens = local.auth.emitirTokens( getWireBox().getInstance( "UsuarioService" ).retrieveUserById( local.usuario.getCdUsuario() ) );
 		return { Authorization : "Bearer " & local.tokens.access_token, Accept : "text/html" };

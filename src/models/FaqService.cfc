@@ -1,4 +1,5 @@
 component singleton {
+
 	property name="faqRepository" inject="repositories.FaqRepository";
 
 	public array function listarPublicas( any busca = "" ) {
@@ -21,13 +22,23 @@ component singleton {
 
 	public numeric function criar( required any dto ) {
 		arguments.dto.validar();
-		return variables.faqRepository.criar( trim( arguments.dto.getTxPergunta() ), trim( arguments.dto.getTxResposta() ) );
+		return variables.faqRepository.criar(
+			trim( arguments.dto.getTxPergunta() ),
+			trim( arguments.dto.getTxResposta() )
+		);
 	}
 
 	public void function editar( required any cdFaq, required any dto ) {
 		validarId( arguments.cdFaq );
 		arguments.dto.validar();
-		if ( NOT variables.faqRepository.editar( arguments.cdFaq, trim( arguments.dto.getTxPergunta() ), trim( arguments.dto.getTxResposta() ) ) ) naoEncontrada();
+		if (
+			NOT variables.faqRepository.editar(
+				arguments.cdFaq,
+				trim( arguments.dto.getTxPergunta() ),
+				trim( arguments.dto.getTxResposta() )
+			)
+		)
+			naoEncontrada();
 	}
 
 	public void function excluir( required any cdFaq ) {
@@ -44,7 +55,9 @@ component singleton {
 	}
 
 	private void function validarId( required any cdFaq ) {
-		if ( NOT isSimpleValue( arguments.cdFaq ) OR NOT reFind( "^[1-9][0-9]{0,9}$", arguments.cdFaq ) OR arguments.cdFaq GT 2147483647 ) {
+		if (
+			NOT isSimpleValue( arguments.cdFaq ) OR NOT reFind( "^[1-9][0-9]{0,9}$", arguments.cdFaq ) OR arguments.cdFaq GT 2147483647
+		) {
 			throw( type = "FaqInvalido", message = "Identificador de pergunta inválido." );
 		}
 	}
@@ -52,4 +65,5 @@ component singleton {
 	private void function naoEncontrada() {
 		throw( type = "FaqNaoEncontrado", message = "Pergunta não encontrada." );
 	}
+
 }

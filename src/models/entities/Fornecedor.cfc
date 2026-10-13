@@ -1,18 +1,36 @@
 component
-	extends="BaseEntidade"
+	extends  ="BaseEntidade"
 	accessors="true"
-	table="cmscondominio.tb_fornecedores"
-	datasource="cmscondominio"
-	grammar="PostgresGrammar@qb"
+	table    ="cmscondominio.tb_fornecedores"
 {
 
-	property name="cdFornecedor" column="cd_fornecedor" sqltype="cf_sql_integer" insert="false" update="false";
-	property name="nmFornecedor" column="nm_fornecedor" sqltype="cf_sql_varchar";
-	property name="nmEmpresa" column="nm_empresa" sqltype="cf_sql_varchar";
-	property name="nrTelefone" column="nr_telefone" sqltype="cf_sql_bigint";
-	property name="txInstagram" column="tx_instagram" sqltype="cf_sql_varchar";
+	property
+		name   ="cdFornecedor"
+		column ="cd_fornecedor"
+		sqltype="cf_sql_integer"
+		insert ="false"
+		update ="false";
+	property
+		name   ="nmFornecedor"
+		column ="nm_fornecedor"
+		sqltype="cf_sql_varchar";
+	property
+		name   ="nmEmpresa"   
+		column ="nm_empresa"   
+		sqltype="cf_sql_varchar";
+	property
+		name   ="nrTelefone"  
+		column ="nr_telefone"  
+		sqltype="cf_sql_bigint";
+	property
+		name   ="txInstagram" 
+		column ="tx_instagram" 
+		sqltype="cf_sql_varchar";
 
-	property name="statusId" column="status_id" sqltype="cf_sql_integer";
+	property
+		name   ="statusId"
+		column ="status_id"
+		sqltype="cf_sql_integer";
 
 	public any function status() {
 		return belongsTo( "StatusFornecedor", "statusId", "id" );
@@ -24,17 +42,21 @@ component
 
 	public any function categorias() {
 		return belongsToMany(
-			relationName = "Categoria",
-			table = "cmscondominio.tb_fornecedor_categoria",
+			relationName    = "Categoria",
+			table           = "cmscondominio.tb_fornecedor_categoria",
 			foreignPivotKey = "cd_fornecedor",
 			relatedPivotKey = "cd_categoria",
-			parentKey = "cdFornecedor",
-			relatedKey = "cdCategoria"
+			parentKey       = "cdFornecedor",
+			relatedKey      = "cdCategoria"
 		);
 	}
 
 	public any function comentarios() {
-		return hasMany( "Comentario", "cdFornecedor", "cdFornecedor" );
+		return hasMany(
+			"Comentario",
+			"cdFornecedor",
+			"cdFornecedor"
+		);
 	}
 
 }

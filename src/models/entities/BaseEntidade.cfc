@@ -20,7 +20,7 @@ component extends="quick.models.BaseEntity" accessors="true" {
 
 	private boolean function isChaveAssociacao( required string name ) {
 		return arguments.name == "cmscondominio.tb_fornecedor_categoria.cd_fornecedor" ||
-			arguments.name == "cmscondominio.tb_fornecedor_categoria.cd_categoria";
+		arguments.name == "cmscondominio.tb_fornecedor_categoria.cd_categoria";
 	}
 
 }

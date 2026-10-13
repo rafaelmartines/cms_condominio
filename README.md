@@ -216,6 +216,10 @@ As páginas de fornecedores têm views distintas: `/fornecedores` usa `fornecedo
 
 `GET /faq` é público e aparece no menu geral. Mostra somente perguntas ativas, ordenadas por pergunta e ID, com respostas em accordion Bootstrap. O formulário GET filtra pelo texto da pergunta, ignorando maiúsculas e acentos portugueses, e mantém a busca na URL (`/faq?busca=...`). A busca é literal, inclusive para `%`, `_` e aspas, sem depender de `unaccent`. Há mensagens para lista vazia e nenhum resultado. Sem JavaScript, todas as respostas ficam abertas e a busca continua funcionando.
 
+O `FaqRepository` usa SQL parametrizado para a listagem com filtros e Quick 13 para criação, consulta por ID e atualizações, com a entidade `entities.Faq`. A exclusão continua lógica, por alteração de `in_ativo`; não há remoção física no fluxo administrativo. Cada método do repository abre uma transação, confirma com `transactionCommit()` e, em caso de exceção, executa `transactionRollback()` e propaga o erro. As atualizações alteram somente os campos necessários, preservando a situação durante a edição e o conteúdo durante a ativação/inativação. Os commits são explícitos: consumidores e testes não devem depender de rollback externo para desfazer essas operações. A suíte `FaqSpec` limpa explicitamente os registros que cria.
+
+Referências: [transações no Lucee](https://docs.lucee.org/reference/tags/transaction.html) e [atualizações no Quick](https://quick.ortusbooks.com/guide/getting-started/updating-existing-entities) (API conferida no módulo 13.0.4 instalado).
+
 Antes de publicar a funcionalidade, aplique uma vez [database/004_faq.sql](database/004_faq.sql) no PostgreSQL do datasource `cmscondominio`. O script cria `cmscondominio.tb_faq` e seu índice; requer o schema existente e permissão de criação. Não altera tabelas anteriores nem cadastra perguntas automaticamente. Com as variáveis `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER` e `PGPASSWORD` configuradas de forma segura para o banco de destino:
 
 ```sh
@@ -382,3 +386,15 @@ O interceptor `NotificacaoErros` notifica respostas HTTP de erro (400–599) e e
 Cada mensagem anexa um arquivo `.log` em Base64 com o registro daquela ocorrência: identificador, horário, status HTTP, evento, método, tipo da exceção e até 50 localizações de arquivo/linha da pilha. O mesmo registro é enviado ao LogBox. Não são anexados arquivos completos do container, corpo/headers da requisição, cookies, SQL, valores do formulário ou mensagens brutas da exceção, que podem conter senhas, tokens e dados pessoais. Respostas de validação ou autenticação também geram e-mail. Erros do proxy, do container ou anteriores ao bootstrap do ColdBox não passam por esse interceptor.
 
 Os testes em `src/tests/specs/integration/ErrosSpec.cfc` simulam o Resend para verificar anexo, ausência de segredos, deduplicação, falha de envio e integração com o tratamento HTTP, sem enviar mensagens reais.
+
+### Configuração central do Quick
+
+As entidades em `src/models/entities/` herdam o datasource e a grammar de `moduleSettings.quick` em `src/config/Coldbox.cfc`, usando os pontos de configuração nativos `defaultQueryOptions.datasource` e `defaultGrammar` do Quick 13.0.4. Não declare esses atributos nas entidades, pois eles sobrescrevem os padrões do módulo.
+
+As variáveis opcionais `QUICK_DATASOURCE` e `QUICK_GRAMMAR` têm os padrões `cmscondominio` e `PostgresGrammar@qb`. O Compose repassa essas variáveis ao runtime. Para mudar os valores, configure o ambiente e recrie o serviço com `podman compose up -d`; fora do Compose, disponibilize as variáveis ao processo e reinicialize a aplicação. O datasource escolhido precisa estar registrado no Lucee; a grammar precisa resolver para um mapping do qb no WireBox.
+
+Essa configuração afeta as operações do Quick. Os repositories com SQL direto e o datasource padrão de `Application.cfc` continuam com sua configuração própria. Alterar a grammar não adapta automaticamente o schema nem o SQL específico de PostgreSQL.
+
+Referências: [configuração de módulos do ColdBox 8](https://coldbox.ortusbooks.com/the-basics/modules) e [padrões e sobrescritas de entidades Quick](https://quick.ortusbooks.com/guide/getting-started/defining-an-entity).
+
+O `FornecedoresRepository` mantém SQL parametrizado nas listagens com filtros e agregações; a consulta de detalhes por ID usa Quick e preserva a restrição ao status Verificado. Criação de fornecedores, vínculos e comentários, aprovação e exclusão usam Quick. A exclusão física continua restrita a Aguardando e bloqueia o fornecedor antes de remover vínculos e comentários. Os métodos de acesso a dados executam em transação, com commit/rollback explícitos quando iniciam a transação; quando chamados dentro de uma transação existente, propagam falhas e deixam a confirmação/reversão ao chamador. Assim, a indicação permanece atômica inclusive quando o envio de e-mail falha. `IsWithinTransaction()` está disponível desde Lucee 5.3.9.4, compatível com o Lucee 6 do projeto ([referência oficial](https://docs.lucee.org/reference/functions/iswithintransaction.html)).
