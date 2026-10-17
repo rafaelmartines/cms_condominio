@@ -70,19 +70,7 @@ component singleton {
 
 
 	public boolean function postIndicacao( required IndicacaoDTO indicacaoDTO ) {
-		local.dados      = arguments.indicacaoDTO.validar();
-		local.corpoEmail = {
-			subject : "Fornecedor aguardando aprovação",
-			html    : "<h1>Nova indicação de fornecedor</h1><p>O fornecedor <strong>#encodeForHTML( local.dados.nmFornecedor )#</strong> está aguardando aprovação.</p><p>Acesse o painel de aprovação de fornecedores para revisar a indicação.</p>"
-		};
-		// Uma falha no aviso permite repetir o envio sem deixar uma indicação duplicada.
-		transaction {
-			if ( NOT variables.fornecedoresRepository.addIndicacao( local.dados ) ) return false;
-			if ( NOT variables.resend.enviarEmail( corpoEmail = local.corpoEmail ) ) {
-				throw( type = "ResendException", message = "Não foi possível enviar o aviso de aprovação." );
-			}
-		}
-		return true;
+		return variables.fornecedoresRepository.addIndicacao( arguments.indicacaoDTO.validar() );
 	}
 
 	public array function getComentariosPorFornecedor( required numeric cdFornecedor ) {

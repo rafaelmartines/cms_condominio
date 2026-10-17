@@ -21,7 +21,7 @@
                     <div class="modal-body p-0">
                         <div class="text-success display-4 mb-2"><i class="bi bi-check-circle-fill"></i></div>
                         <h5 class="fw-bold mb-2">Sucesso!</h5>
-                        <p class="text-muted small mb-3">Indicação enviada com sucesso. Obrigado!</p>
+                        <p class="text-muted small mb-3">Indicação registrada com sucesso. O fornecedor está aguardando aprovação.</p>
                         <button type="button" class="btn btn-primary w-100" data-bs-dismiss="modal">OK</button>
                     </div>
                 </div>
@@ -197,7 +197,10 @@
                         body: JSON.stringify(formData)
                     });
 
-                    if (!response.ok) throw new Error(`Erro: ${response.status}`);
+                    if (!response.ok) {
+                        const falha = await response.json().catch(() => ({}));
+                        throw new Error(falha.message || 'Não foi possível enviar. Contate a administração.');
+                    }
 
                     form.reset();
                     form.classList.remove('was-validated');
@@ -207,7 +210,7 @@
                 } catch (error) {
                     console.error('Erro ao enviar indicação:', error);
                     await fecharAguarde();
-                    alert('Não foi possível enviar a indicação no momento. Tente novamente.');
+                    alert(error.message || 'Não foi possível enviar a indicação. Contate a administração.');
                 } finally {
                     btnEnviar.disabled = false;
                     btnEnviar.innerHTML = textoOriginalBotao;

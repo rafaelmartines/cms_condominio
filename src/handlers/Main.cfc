@@ -40,6 +40,7 @@ component extends="coldbox.system.EventHandler" {
 		application.resendKey  = getEnv( "RESEND_KEY" );
 		application.resendFrom = getEnv( "RESEND_FROM" );
 		application.resendTo   = getEnv( "RESEND_TO" );
+		application.resendVerifiedDomain = getSystemSetting( "RESEND_VERIFIED_DOMAIN", "resend.dev" );
 	}
 
 	function onRequestStart( event, rc, prc ) {
@@ -55,6 +56,10 @@ component extends="coldbox.system.EventHandler" {
 	function onSessionEnd( event, rc, prc ) {
 		var sessionScope     = event.getValue( "sessionReference" );
 		var applicationScope = event.getValue( "applicationReference" );
+	}
+
+	function onInvalidEvent( event, rc, prc ) {
+		arguments.event.renderData( type = "plain", data = "Página não encontrada.", statusCode = 404 );
 	}
 
 	function onException( event, rc, prc ) {

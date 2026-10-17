@@ -1,6 +1,6 @@
 # CMS do condomínio
 
-Aplicação para consultar fornecedores, filtrar por nome e categoria, visualizar contatos, comentários e média das notas. Moradores podem indicar fornecedores para aprovação, com aviso por e-mail, e enviar testemunhos por e-mail.
+Aplicação para consultar fornecedores, filtrar por nome e categoria, visualizar contatos, comentários e média das notas. Moradores podem indicar fornecedores para aprovação diretamente no banco, sem envio de e-mail, e enviar testemunhos por e-mail.
 
 Os formulários enviam mensagens pelo Resend; esses fluxos não gravam fornecedores nem comentários no banco. Sugestões para assembleias e painel de avisos são objetivos futuros, ainda sem implementação no código atual.
 
@@ -42,10 +42,11 @@ Preencha as variáveis com a configuração do seu ambiente:
 | `CFCONFIG_DATASOURCES_CMSCONDOMINIO_DATABASE` | Nome do banco |
 | `RESEND_URI` | Endpoint de envio de e-mail |
 | `RESEND_KEY` | Chave da integração |
-| `RESEND_FROM` | Remetente |
-| `RESEND_TO` | Destinatário das indicações e testemunhos |
+| `RESEND_FROM` | Remetente do domínio autorizado, por exemplo `CMS <avisos@dominio-verificado>` |
+| `RESEND_TO` | Destinatário dos testemunhos e notificações; vários e-mails separados por vírgula |
+| `RESEND_VERIFIED_DOMAIN` | Domínio do remetente já verificado na Resend; padrão `resend.dev` somente para testes |
 
-As quatro variáveis `RESEND_*` ainda não estão em `.env.example`: adicione-as ao `.env` local. Elas são consumidas por `Main.onAppInit`. O Compose define `ENVIRONMENT=development`; fora dele, disponibilize também essa variável ao processo. Não versione credenciais nem compartilhe saídas que expandam o conteúdo do `.env`.
+As variáveis `RESEND_*` estão em `.env.example` e são consumidas por `Main.onAppInit`. Configure `RESEND_URI=https://api.resend.com/emails`. `RESEND_FROM` deve usar o domínio declarado em `RESEND_VERIFIED_DOMAIN`. Verifique o domínio próprio no painel da Resend antes de configurá-lo; a declaração local não consulta nem comprova o estado de verificação na conta. O domínio de testes `resend.dev` permite envio somente para o e-mail da própria conta Resend. Para enviar a outros destinatários, use um domínio próprio verificado ([documentação oficial](https://resend.com/docs/dashboard/domains/introduction)). O Compose define `ENVIRONMENT=development`; fora dele, disponibilize também essa variável ao processo. Não versione credenciais nem compartilhe saídas que expandam o conteúdo do `.env`.
 
 O Compose não cria um banco. É necessário fornecer o schema `cmscondominio`, com `tb_fornecedores`, `tb_categoria`, `tb_fornecedor_categoria` e `tb_comentarios`, conforme as consultas em `src/models/repositories/`. A busca por nome usa a extensão PostgreSQL `unaccent`, instalada no schema `cmscondominio` pelo script `database/003_unaccent.sql`. O script `database/001_usuarios.sql` cria somente a tabela de usuários; obtenha a estrutura das demais tabelas antes de usar as páginas.
 
@@ -100,7 +101,7 @@ Se o runtime continuar usando rotas antigas após a recarga, reinicie o containe
 | POST | `/auth` | Validação de credenciais e emissão de JWT em JSON |
 | GET | `/fornecedores` | Listagem pública com filtros por nome e categoria |
 | GET | `/administracao/fornecedores` | Listagem protegida com acesso ao cadastro e à aprovação |
-| GET | `/fornecedores/indicar` | Indicação para aprovação, com aviso por e-mail |
+| GET | `/fornecedores/indicar` | Indicação para aprovação, sem envio de e-mail |
 | GET/POST | `/fornecedores/adicionar` | Cadastro no banco (exige login) |
 | GET | `/fornecedores/aprovacao` | Pendências (somente administradores) |
 | POST | `/fornecedores/:cdFornecedor/aprovar` | Aprovar e publicar (somente administradores) |
@@ -198,7 +199,9 @@ A entidade Quick `Fornecedor.statusId` mapeia `status_id`. `Fornecedor.status()`
 
 Cadastro, consulta das pendências, aprovação e exclusão exigem autenticação. Qualquer usuário autenticado pode acessar `/fornecedores/aprovacao` e aprovar ou excluir fornecedores com status **Aguardando**, sem permissão de administrador. O menu de aprovação aparece após o login. Os POSTs de cadastro, aprovação e exclusão exigem JWT de acesso válido no header Authorization, sem CSRF. A exclusão remove o fornecedor e seus vínculos em uma transação; fornecedores verificados ou inativos não podem ser excluídos por este fluxo.
 
-O formulário de indicação anterior foi preservado em `/fornecedores/indicar` e continua usando `POST /api/fornecedores/indicacao` para gravar o fornecedor como **Aguardando** (aguardando aprovação), suas categorias e um comentário, além de enviar um aviso de fornecedor aguardando aprovação por `Resend.enviarEmail()`, para `RESEND_TO`. Uma exceção ou retorno falso do envio desfaz a gravação, permitindo nova tentativa. O envio HTTP ocorre dentro da transação de gravação e pode aguardar até o timeout do Resend (10 segundos). Banco e serviço externo não compartilham uma transação: uma falha de confirmação no banco após o envio ou um timeout após a aceitação do e-mail pode deixar um aviso já enviado. O comentário usa `nrApartamento`, `nmIndicador` como `nmNome`, `txMotivo` como `txConteudo` e a nota (padrão 5). O cadastro em `/fornecedores/adicionar` grava no banco e não envia e-mail.
+O formulário público `/fornecedores/indicar` usa `POST /api/fornecedores/indicacao` para gravar diretamente o fornecedor como **Aguardando** (aguardando aprovação), suas categorias e um comentário, em uma transação. Este fluxo não chama a Resend e não envia e-mails de logs ou notificações, inclusive em falhas na página ou na API. Falhas na persistência revertem a transação. O status enviado pelo cliente é ignorado. O comentário usa `nrApartamento`, `nmIndicador` como `nmNome`, `txMotivo` como `txConteudo` e a nota (padrão 5). O cadastro autenticado em `/fornecedores/adicionar` continua publicando fornecedores como Verificado.
+
+A API de indicação retorna JSON com `error` e `message`: **201** para indicação registrada, **400** para corpo JSON inválido, **422** para dados inválidos e **500** somente para falhas inesperadas, sem expor detalhes internos. Eventos inexistentes continuam respondendo **404** pelo tratamento global. Testemunhos continuam usando a Resend.
 
 Testes do fluxo:
 
@@ -381,7 +384,7 @@ A imagem usa Lucee 6, apesar dos comentários que mencionam Lucee 7. O build nã
 
 ## Notificação de erros
 
-O interceptor `NotificacaoErros` notifica respostas HTTP de erro (400–599) e exceções não tratadas, inclusive nas APIs, usando `Resend.enviarEmail()`. O destinatário é `RESEND_TO`, com as mesmas configurações `RESEND_URI`, `RESEND_KEY` e `RESEND_FROM` dos demais e-mails. Há no máximo uma tentativa por requisição. Falhas de envio são registradas no LogBox e não substituem o erro original nem geram novas notificações; a chamada HTTP ao Resend tem timeout de 10 segundos.
+O interceptor `NotificacaoErros` notifica respostas HTTP de erro (400–599, exceto 404) e exceções não tratadas, inclusive nas APIs, usando `Resend.enviarEmail()`. O fluxo de indicação (`Fornecedores.indicar` e `api.Fornecedores.indicacao`) não envia notificações por e-mail. O destinatário é `RESEND_TO`, com as mesmas configurações `RESEND_URI`, `RESEND_KEY` e `RESEND_FROM` dos demais e-mails. Há no máximo uma tentativa por requisição. Falhas de envio são registradas no LogBox e não substituem o erro original nem geram novas notificações; a chamada HTTP ao Resend tem timeout de 10 segundos.
 
 Cada mensagem anexa um arquivo `.log` em Base64 com o registro daquela ocorrência: identificador, horário, status HTTP, evento, método, tipo da exceção e até 50 localizações de arquivo/linha da pilha. O mesmo registro é enviado ao LogBox. Não são anexados arquivos completos do container, corpo/headers da requisição, cookies, SQL, valores do formulário ou mensagens brutas da exceção, que podem conter senhas, tokens e dados pessoais. Respostas de validação ou autenticação também geram e-mail. Erros do proxy, do container ou anteriores ao bootstrap do ColdBox não passam por esse interceptor.
 
@@ -397,4 +400,20 @@ Essa configuração afeta as operações do Quick. Os repositories com SQL diret
 
 Referências: [configuração de módulos do ColdBox 8](https://coldbox.ortusbooks.com/the-basics/modules) e [padrões e sobrescritas de entidades Quick](https://quick.ortusbooks.com/guide/getting-started/defining-an-entity).
 
-O `FornecedoresRepository` mantém SQL parametrizado nas listagens com filtros e agregações; a consulta de detalhes por ID usa Quick e preserva a restrição ao status Verificado. Criação de fornecedores, vínculos e comentários, aprovação e exclusão usam Quick. A exclusão física continua restrita a Aguardando e bloqueia o fornecedor antes de remover vínculos e comentários. Os métodos de acesso a dados executam em transação, com commit/rollback explícitos quando iniciam a transação; quando chamados dentro de uma transação existente, propagam falhas e deixam a confirmação/reversão ao chamador. Assim, a indicação permanece atômica inclusive quando o envio de e-mail falha. `IsWithinTransaction()` está disponível desde Lucee 5.3.9.4, compatível com o Lucee 6 do projeto ([referência oficial](https://docs.lucee.org/reference/functions/iswithintransaction.html)).
+O `FornecedoresRepository` mantém SQL parametrizado nas listagens com filtros e agregações; a consulta de detalhes por ID usa Quick e preserva a restrição ao status Verificado. Criação de fornecedores, vínculos e comentários, aprovação e exclusão usam Quick. A exclusão física continua restrita a Aguardando e bloqueia o fornecedor antes de remover vínculos e comentários. Os métodos de acesso a dados executam em transação, com commit/rollback explícitos quando iniciam a transação; quando chamados dentro de uma transação existente, propagam falhas e deixam a confirmação/reversão ao chamador. Assim, a indicação permanece atômica ao gravar fornecedor, vínculos e comentário, sem integração de e-mail. `IsWithinTransaction()` está disponível desde Lucee 5.3.9.4, compatível com o Lucee 6 do projeto ([referência oficial](https://docs.lucee.org/reference/functions/iswithintransaction.html)).
+
+
+### Validação da integração Resend
+
+`Resend.enviarEmail()` valida o payload antes de chamar a API: remetente configurado e domínio autorizado, destinatários válidos (até 50 em `to`), assunto preenchido e conteúdo em `html` ou `text`. Não altera o struct recebido. O remetente sempre vem de `RESEND_FROM`; endereços inválidos em `to`, `cc`, `bcc` e `reply_to` são substituídos pelo primeiro endereço válido de `RESEND_TO`. Sem substituto válido, o envio é bloqueado; nenhum endereço é inventado. A URI e a chave também são validadas antes da requisição. O HTTP usa HTTPS, timeout de 10 segundos e não segue redirecionamentos.
+
+Respostas 422 geram um log da estrutura do payload (campos presentes, indicadores de conteúdo e quantidade de destinatários), sem endereços, assunto, corpo, anexos, chave ou resposta bruta do provedor. A integração aceita status 2xx e não realiza tentativas automáticas após falhas. A API de testemunho retorna HTTP 502 com uma mensagem em `message`, exibida pelo formulário. A indicação não utiliza a Resend. Esses erros não disparam outro e-mail pelo interceptor. Respostas 403 com `resend.dev` explicam a restrição do domínio de testes ([erros da Resend](https://resend.com/docs/api-reference/errors)).
+
+Teste isolado, sem envio real: `curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.specs.integration.ResendSpec'`.
+
+
+Testes da indicação sem e-mail (registros temporários com rollback e integração simulada):
+
+```sh
+curl -fsS 'http://localhost:10000/tests/runner.cfm?reporter=json&bundles=tests.specs.integration.IndicacaoSpec,tests.specs.integration.IndicacaoHttpSpec'
+```

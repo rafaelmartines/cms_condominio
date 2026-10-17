@@ -30,6 +30,35 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/app" {
 				expect( local.email.attachments[ 1 ].filename ).toInclude( ".log" );
 			} );
 
+			it( "não envia e-mail para resposta 404", function() {
+				variables.servico.notificar( variables.evento, 404 );
+				expect( arrayLen( variables.enviados ) ).toBe( 0 );
+			} );
+
+			it( "handler inexistente retorna 404 sem e-mail", function() {
+				local.interceptor = prepareMock( getController().getInterceptorService().getInterceptor( "NotificacaoErros" ) );
+				local.original = local.interceptor.$getProperty( "erroService", "variables" );
+				local.interceptor.$property( "erroService", "variables", variables.servico );
+				try {
+					local.resultado = get( route = "/rota-inexistente/indicar" );
+					expect( local.resultado.getStatusCode() ).toBe( 404 );
+					expect( local.resultado.getRenderedContent() ).toInclude( "Página não encontrada." );
+					expect( arrayLen( variables.enviados ) ).toBe( 0 );
+				} finally {
+					local.interceptor.$property( "erroService", "variables", local.original );
+				}
+			} );
+
+			it( "não envia notificações de erro nos eventos de indicação", function() {
+				prepareMock( variables.evento );
+				for ( local.nome in [ "Fornecedores.indicar", "api.Fornecedores.indicacao" ] ) {
+					variables.evento.$( "getCurrentEvent", local.nome );
+					variables.servico.notificar( variables.evento, 500 );
+					variables.servico.notificar( variables.evento, 422 );
+				}
+				expect( arrayLen( variables.enviados ) ).toBe( 0 );
+			} );
+
 			it( "notifica somente uma vez por requisição", function() {
 				variables.servico.notificar( variables.evento, 500 );
 				variables.servico.notificar( variables.evento, 500 );

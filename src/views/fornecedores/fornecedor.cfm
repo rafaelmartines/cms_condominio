@@ -300,7 +300,8 @@
 
                 // Verifica se a API retornou erro HTTP (4xx ou 5xx)
                 if (!response.ok) {
-                    throw new Error(`Erro na requisição: ${response.status}`);
+                    const falha = await response.json().catch(() => ({}));
+                    throw new Error(falha.message || 'Não foi possível enviar. Contate a administração.');
                 }
 
                 // Opcional: Ler a resposta JSON da API caso precise tratar algo
@@ -318,7 +319,7 @@
                 console.error('Erro ao enviar avaliação:', error);
                 
                 modalAguarde.hide();
-                alert('Não foi possível enviar sua avaliação no momento. Tente novamente mais tarde.');
+                alert(error.message || 'Não foi possível enviar sua avaliação. Contate a administração.');
 
             } finally {
                 // 7. Reabilita o botão independente do resultado

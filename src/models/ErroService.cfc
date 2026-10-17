@@ -8,6 +8,10 @@ component singleton {
 		required numeric status,
 		struct exception = {}
 	) {
+		// O fluxo de indicação persiste somente no banco, inclusive em caso de erro.
+		if ( listFindNoCase( "Fornecedores.indicar,api.Fornecedores.indicacao", arguments.event.getCurrentEvent() ) ) return;
+		// Recurso inexistente não exige notificação por e-mail.
+		if ( arguments.status EQ 404 ) return;
 		local.prc = arguments.event.getPrivateCollection();
 		if ( local.prc.erroEmailProcessado ?: false ) return;
 		// Marcar antes do envio impede duplicação e recursão quando o Resend falha.
